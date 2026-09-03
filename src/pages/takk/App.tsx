@@ -118,7 +118,7 @@ export function App() {
                 customAnswers: { a1: lead.tel },
               }
             : {},
-          utm: { utmContent: lead?.taskId ?? '', utmSource: 'leads.accountera.no' },
+          utm: { utmContent: lead?.taskId ?? '' },
         });
       })
       .catch(() => {
