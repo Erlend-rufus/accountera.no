@@ -1,0 +1,359 @@
+/* Accountera Design System – basisstiler og komponentklasser (rekonstruert, se README). */
+@import './tokens/index.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--acc-bg);
+  color: var(--acc-fg);
+  font-family: var(--acc-font);
+  line-height: var(--acc-lh-body);
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+body {
+  margin: 0;
+  font-size: var(--acc-fs-body);
+  font-weight: var(--acc-w-regular);
+  background: var(--acc-bg);
+  color: var(--acc-fg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+ul { padding: 0; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+img, svg { display: block; max-width: 100%; }
+:focus-visible {
+  outline: 2px solid var(--acc-focus);
+  outline-offset: 3px;
+}
+
+/* Layout */
+.ds-container {
+  width: 100%;
+  max-width: calc(var(--acc-max) + 2 * var(--acc-gutter));
+  margin-inline: auto;
+  padding-inline: var(--acc-gutter);
+}
+
+/* Typografi */
+.ds-kicker {
+  font-size: var(--acc-fs-kicker);
+  font-weight: var(--acc-w-medium);
+  letter-spacing: var(--acc-track-kicker);
+  text-transform: uppercase;
+  color: var(--acc-heading);
+  line-height: 1.35;
+}
+.ds-h1-thin {
+  font-weight: var(--acc-w-thin);
+  font-size: var(--acc-fs-h1-thin);
+  line-height: 1.08;
+  color: var(--acc-heading);
+}
+.ds-h1 {
+  font-weight: var(--acc-w-medium);
+  font-size: 2.25rem;
+  line-height: 1.15;
+  color: var(--acc-heading);
+}
+.ds-h2 {
+  font-weight: var(--acc-w-medium);
+  font-size: var(--acc-fs-h2);
+  line-height: 1.2;
+  color: var(--acc-heading);
+}
+.ds-h3 {
+  font-weight: var(--acc-w-medium);
+  font-size: var(--acc-fs-h3);
+  line-height: 1.3;
+  color: var(--acc-heading);
+}
+.ds-lead {
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+.ds-body { font-size: var(--acc-fs-body); line-height: var(--acc-lh-body); }
+.ds-muted { color: var(--acc-fg-muted); }
+.ds-small { font-size: var(--acc-fs-small); line-height: 1.4; }
+.ds-display-num {
+  font-weight: var(--acc-w-thin);
+  font-size: var(--acc-fs-display-num);
+  line-height: 1;
+}
+.ds-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+.ds-link:hover { text-decoration-thickness: 2px; }
+@media (min-width: 960px) {
+  .ds-h1 { font-size: 3rem; }
+  .ds-lead { font-size: 1.25rem; }
+}
+
+/* Flater */
+.ds-on-navy {
+  background: var(--acc-navy);
+  color: var(--acc-cream);
+}
+.ds-on-navy .ds-h2,
+.ds-on-navy .ds-h3,
+.ds-on-navy .ds-kicker,
+.ds-on-navy .ds-h1-thin { color: var(--acc-cream); }
+.ds-on-navy .ds-muted { color: var(--acc-cream-a72); }
+.ds-on-navy :focus-visible { outline-color: var(--acc-cream); }
+
+/* Knapp */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: var(--acc-control-h);
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--acc-radius);
+  font-weight: var(--acc-w-medium);
+  font-size: 1.125rem;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s var(--acc-ease), color 0.15s var(--acc-ease), border-color 0.15s var(--acc-ease);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ds-btn--primary {
+  background: var(--acc-primary);
+  color: var(--acc-cream);
+  border-color: var(--acc-primary);
+}
+.ds-btn--primary:hover { background: var(--acc-navy); border-color: var(--acc-navy); }
+.ds-btn--primary:disabled,
+.ds-btn--primary[aria-disabled='true'] { opacity: 0.65; cursor: default; }
+.ds-btn--secondary {
+  background: transparent;
+  color: var(--acc-primary);
+  border-color: var(--acc-primary);
+}
+.ds-btn--secondary:hover { background: var(--acc-primary-a10); }
+.ds-on-navy .ds-btn--secondary { color: var(--acc-cream); border-color: var(--acc-cream); }
+.ds-on-navy .ds-btn--secondary:hover { background: var(--acc-cream-a15); }
+.ds-btn--full { display: flex; width: 100%; }
+.ds-btn__icon { width: 1.125em; height: 1.125em; flex: none; }
+@media (min-width: 960px) {
+  .ds-btn { min-height: 3rem; padding: 0.625rem 1.5rem; font-size: 1rem; }
+  .ds-btn--full { width: auto; display: inline-flex; }
+}
+
+/* Skjemafelt */
+.ds-field { display: flex; flex-direction: column; gap: 0.5rem; }
+.ds-field__label {
+  font-weight: var(--acc-w-medium);
+  font-size: 1.125rem;
+  line-height: 1.3;
+  color: var(--acc-primary);
+}
+.ds-field__optional {
+  font-weight: var(--acc-w-regular);
+  font-size: 1rem;
+  color: var(--acc-fg-muted);
+  margin-left: 0.375rem;
+}
+.ds-field__hint {
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--acc-fg-muted);
+  margin-top: -0.25rem;
+}
+.ds-control {
+  display: block;
+  width: 100%;
+  min-height: var(--acc-control-h);
+  padding: 0.75rem 1rem;
+  margin: 0;
+  font: inherit;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  color: var(--acc-fg);
+  background: var(--acc-cream);
+  border: 1px solid var(--acc-line);
+  border-radius: var(--acc-radius);
+  box-shadow: 0 0 0 0 transparent;
+  transition: border-color 0.15s var(--acc-ease), box-shadow 0.15s var(--acc-ease);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.ds-control::placeholder { color: var(--acc-navy-a60); }
+.ds-control:focus {
+  outline: none;
+  border-color: var(--acc-primary);
+  box-shadow: inset 0 0 0 1px var(--acc-primary);
+}
+.ds-control:focus-visible { outline: 2px solid var(--acc-primary); outline-offset: 2px; }
+.ds-field--error .ds-control {
+  border-color: var(--acc-navy);
+  box-shadow: inset 0 0 0 1px var(--acc-navy);
+}
+.ds-field__error {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-weight: var(--acc-w-medium);
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--acc-primary);
+}
+.ds-field__error svg { flex: none; width: 1.125rem; height: 1.125rem; margin-top: 0.1rem; }
+textarea.ds-control { min-height: 7.5rem; resize: vertical; }
+.ds-select { position: relative; }
+.ds-select .ds-control { padding-right: 3rem; cursor: pointer; }
+.ds-select .ds-control:invalid,
+.ds-select .ds-control[data-empty='true'] { color: var(--acc-fg); }
+.ds-select__chev {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--acc-primary);
+}
+@media (min-width: 960px) {
+  .ds-field__label { font-size: 1rem; }
+  .ds-field__hint { font-size: 1rem; }
+  .ds-control { min-height: 3rem; padding: 0.625rem 0.875rem; font-size: 1rem; }
+}
+
+/* Notice */
+.ds-notice {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--acc-primary);
+  border-left-width: 4px;
+  border-radius: var(--acc-radius);
+  background: var(--acc-cream);
+  color: var(--acc-fg);
+  font-size: var(--acc-fs-body);
+  line-height: 1.45;
+}
+.ds-notice svg { flex: none; width: 1.25rem; height: 1.25rem; margin-top: 0.2rem; color: var(--acc-primary); }
+
+/* Kort */
+.ds-card {
+  background: var(--acc-surface);
+  padding: 1.5rem;
+  border-radius: var(--acc-radius);
+}
+.ds-card--outline {
+  background: transparent;
+  border: 1px solid var(--acc-line);
+}
+.ds-card--notch {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 22px), calc(100% - 30px) 100%, 0 100%);
+}
+.ds-card > * + * { margin-top: 0.5rem; }
+
+/* Mønster */
+.ds-pattern {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  pointer-events: none;
+}
+.ds-pattern--fade-left {
+  -webkit-mask-image: linear-gradient(to right, transparent 30%, #000 65%);
+  mask-image: linear-gradient(to right, transparent 30%, #000 65%);
+}
+
+/* Diagonal */
+.ds-diag { position: relative; }
+.ds-diag__panel {
+  position: relative;
+  background: var(--acc-navy);
+  overflow: hidden;
+}
+.ds-diag__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Hero: på mobil en blokk i flyten øverst, på desktop en trekant øverst til høyre. */
+.ds-diag--hero .ds-diag__panel {
+  height: calc(16px + 100vw * var(--acc-diag-tan));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 16px);
+}
+@media (min-width: 960px) {
+  .ds-diag--hero { min-height: calc(70vw * var(--acc-diag-tan)); }
+  .ds-diag--hero .ds-diag__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 70%;
+    height: calc(70vw * var(--acc-diag-tan));
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+  }
+}
+/* Footer: navy flate med en «hette» over seg som skrår 36° opp mot høyre. */
+.ds-diag--footer {
+  --cap-h: 235px;
+  --cap-x0: 15%;
+  position: relative;
+  color: var(--acc-cream);
+}
+.ds-diag--footer > .ds-diag__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--cap-h));
+  bottom: 0;
+  clip-path: polygon(
+    var(--cap-x0) var(--cap-h),
+    calc(var(--cap-x0) + var(--cap-h) / var(--acc-diag-tan)) 0,
+    100% 0,
+    100% 100%,
+    0 100%,
+    0 var(--cap-h)
+  );
+}
+.ds-diag--footer.ds-diag--flat { --cap-h: 0px; }
+.ds-diag--footer.ds-diag--flat > .ds-diag__panel { clip-path: none; }
+@media (min-width: 960px) {
+  .ds-diag--footer { --cap-h: 260px; --cap-x0: 37.5%; }
+  .ds-diag--footer.ds-diag--flat { --cap-h: 0px; }
+}
+.ds-diag__content { position: relative; }
+
+/* Logo */
+.ds-logo { display: block; height: auto; }
+
+/* Skjult for øyne, ikke for skjermlesere */
+.ds-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Nettleserens standardfarger på skjemaelementer skal ikke slippe gjennom. */
+.ds-control option { color: var(--acc-navy); background: var(--acc-cream); }
+input[type='hidden'] { display: none; }

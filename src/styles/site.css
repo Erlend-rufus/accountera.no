@@ -1,0 +1,260 @@
+/* Sidelayout for leads.accountera.no. Komponentstiler ligger i src/ds/styles.css. */
+[hidden] { display: none !important; }
+
+/* Forsiden har 84 px marg ved 1440 i Claude Design-filen, undersidene 168 px. */
+@media (min-width: 960px) {
+  html.page-index { --acc-max: 1272px; }
+}
+
+/* Header */
+.hdr {
+  background: var(--acc-cream);
+  border-bottom: 1px solid var(--acc-line-soft);
+}
+.hdr__in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--acc-header-h);
+}
+.hdr__logo {
+  display: inline-flex;
+  align-items: center;
+  color: var(--acc-primary);
+  min-height: 2.75rem;
+  text-decoration: none;
+}
+.hdr__phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  color: var(--acc-primary);
+  font-weight: var(--acc-w-medium);
+  font-size: 1.125rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.hdr__phone svg { width: 1.25rem; height: 1.25rem; }
+@media (min-width: 960px) {
+  .hdr__in { height: 5.5rem; }
+  .hdr__phone { font-size: 1rem; }
+}
+
+/* Hero */
+.hero { overflow: hidden; }
+.hero__in {
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.hero__title { margin-top: 0.25rem; }
+.hero__lead { max-width: 34rem; }
+.hero__cta { margin-top: 0.5rem; }
+.hero__sub { margin-top: -0.25rem; }
+@media (min-width: 960px) {
+  .hero__in {
+    padding-top: 4rem;
+    padding-bottom: 6rem;
+    max-width: calc(var(--acc-max) + 2 * var(--acc-gutter));
+  }
+  .hero__in > * { max-width: 34rem; }
+  .hero__title { max-width: 34rem; }
+}
+
+/* Seksjoner */
+.sec { padding: 3.5rem 0; }
+.sec--tight { padding: 2.5rem 0; }
+.sec__head { margin-bottom: 1.5rem; }
+@media (min-width: 960px) {
+  .sec { padding: 7.5rem 0; }
+  .sec__head { margin-bottom: 2rem; }
+}
+
+/* Kjenner du deg igjen */
+.rec__grid { display: grid; gap: 1rem; }
+.rec__card p { font-size: var(--acc-fs-body); }
+@media (max-width: 959.98px) {
+  .rec__card--first { order: -1; }
+}
+@media (min-width: 960px) {
+  .rec__grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+}
+
+/* Slik fungerer det */
+.how { position: relative; }
+.how__band { position: relative; height: 88px; overflow: hidden; }
+.how__band .ds-pattern { inset: 0; }
+.how__grid { display: grid; gap: 2rem; }
+.how__step { border-top: 1px solid var(--acc-cream-a30); padding-top: 1.25rem; display: grid; gap: 0.5rem; }
+.how__step .ds-display-num { margin-bottom: 0.25rem; }
+.how__step .ds-h3 { color: var(--acc-cream); }
+.how__step p { color: var(--acc-cream-a72); }
+@media (min-width: 960px) {
+  .how__grid { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+}
+
+/* Team */
+.team__grid { display: grid; gap: 1.25rem; }
+@media (min-width: 960px) {
+  .team__grid { grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+}
+
+/* Bevis + skjema */
+.lead-sec { padding-top: 0; }
+.lead-sec__grid { display: grid; gap: 2.5rem; }
+.proof { display: grid; gap: 1.25rem; align-content: start; }
+.proof__logo { color: var(--acc-primary); margin-top: 0.5rem; }
+.proof__facts { list-style: none; margin: 0; padding: 0; }
+.proof__facts li {
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--acc-line-soft);
+  font-size: var(--acc-fs-body);
+  color: var(--acc-primary);
+}
+.proof__facts li:last-child { border-bottom: 1px solid var(--acc-line-soft); }
+.quote { border-left: 2px solid var(--acc-primary); padding-left: 1rem; display: grid; gap: 0.5rem; }
+.quote blockquote { margin: 0; font-size: 1.25rem; line-height: 1.45; color: var(--acc-primary); }
+.form-panel {
+  border: 1px solid var(--acc-line);
+  border-radius: var(--acc-radius);
+  padding: 1.5rem 1.5rem 1.75rem;
+  background: var(--acc-cream);
+}
+.form { display: grid; gap: 1.25rem; }
+.form__actions { display: grid; gap: 1rem; margin-top: 0.25rem; }
+.form__note { font-size: 1rem; line-height: 1.45; color: var(--acc-fg-muted); }
+.hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+@media (min-width: 960px) {
+  .lead-sec__grid { grid-template-columns: 5fr 6fr; gap: 5rem; align-items: start; }
+  .form-panel { padding: 2rem; }
+}
+
+/* Footer */
+.ftr { position: relative; padding: 3.5rem 0 7.5rem; color: var(--acc-cream); }
+.ftr--flat { padding-bottom: 7rem; }
+.ftr__in { display: grid; gap: 2rem; }
+.ftr__brand { display: grid; gap: 0.75rem; color: var(--acc-cream); }
+.ftr__brand p { color: var(--acc-cream-a72); font-size: 1rem; }
+.ftr__links { display: grid; gap: 0.875rem; justify-items: start; }
+.ftr__phone { font-weight: var(--acc-w-medium); font-size: 1.125rem; text-decoration: none; }
+.ftr__links .ds-link { font-size: 1rem; color: var(--acc-cream-a72); min-height: 2.75rem; display: inline-flex; align-items: center; }
+.ftr__links .ds-link:hover { color: var(--acc-cream); }
+.ftr__phone { min-height: 2.75rem; display: inline-flex; align-items: center; }
+@media (min-width: 960px) {
+  .ftr { padding: 5rem 0 6rem; }
+  .ftr__in { grid-template-columns: 1fr 1fr; gap: 2rem; }
+}
+
+/* Sticky CTA (bare mobil). Fast posisjon: tar ingen plass i dokumentflyten, og `hidden` fjerner den helt. */
+.sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--acc-cream);
+  border-top: 1px solid var(--acc-line-soft);
+  padding: 0.75rem var(--acc-gutter) calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 960px) {
+  .sticky { display: none !important; }
+}
+
+/* Samtykkelinje */
+.consent {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--acc-cream);
+  border-top: 1px solid var(--acc-line);
+  padding: 1rem var(--acc-gutter) calc(1rem + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: 0.875rem;
+}
+.consent__text { font-size: 1rem; line-height: 1.45; color: var(--acc-fg); }
+.consent__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.consent__actions .ds-btn { min-height: 2.75rem; padding: 0.5rem 0.75rem; font-size: 1rem; }
+@media (min-width: 960px) {
+  .consent {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 2rem;
+    padding-inline: max(var(--acc-gutter), calc((100vw - var(--acc-max)) / 2));
+  }
+  .consent__actions { grid-template-columns: auto auto; }
+}
+
+/* Undersider (takk, takker-nei, personvern) */
+.sub { padding: 2.5rem 0 3rem; }
+.sub--withcap { padding-bottom: calc(235px + 2rem); }
+.sub__grid { display: grid; gap: 2rem; }
+.sub__intro { display: grid; gap: 1.25rem; align-content: start; }
+.sub__intro .ds-lead { max-width: 34rem; }
+.sub__title { margin-top: 0.25rem; }
+.sub__aside { display: grid; gap: 1.25rem; align-content: start; }
+.prepare ul { list-style: disc; padding-left: 1.5rem; display: grid; gap: 0.5rem; }
+.prepare li { font-size: var(--acc-fs-body); }
+.help { display: grid; gap: 0.5rem; }
+.help__item { background: var(--acc-surface); padding: 0.875rem 1rem; font-size: var(--acc-fs-body); line-height: 1.45; }
+.help__item b { font-weight: var(--acc-w-medium); }
+.help__item:last-child { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 21px) 100%, 0 100%); }
+@media (min-width: 960px) {
+  .sub { padding: 5rem 0 4rem; }
+  .sub--withcap { padding-bottom: calc(260px + 3rem); }
+  .sub__grid { grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+  .sub__grid--wide { grid-template-columns: 5fr 6fr; }
+}
+
+/* Calendly */
+.cal {
+  border: 1px solid var(--acc-line);
+  border-radius: var(--acc-radius);
+  background: var(--acc-cream);
+  min-height: 700px;
+  position: relative;
+}
+.cal__widget { min-height: 700px; width: 100%; }
+.cal__status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--acc-fg-muted);
+  pointer-events: none;
+}
+@media (min-width: 960px) {
+  .cal, .cal__widget { min-height: 760px; }
+}
+
+/* Personvern */
+.prose { max-width: 44rem; display: grid; gap: 1rem; font-size: var(--acc-fs-body); line-height: 1.55; }
+.prose h2 { font-weight: var(--acc-w-medium); font-size: 1.5rem; line-height: 1.25; color: var(--acc-primary); margin-top: 1.25rem; }
+.prose h3 { font-weight: var(--acc-w-medium); font-size: 1.25rem; color: var(--acc-primary); margin-top: 0.75rem; }
+.prose ul { padding-left: 1.5rem; display: grid; gap: 0.375rem; }
+.prose a { color: var(--acc-primary); text-decoration: underline; text-underline-offset: 0.15em; }
+.prose table { border-collapse: collapse; width: 100%; font-size: 1rem; }
+.prose th, .prose td { text-align: left; vertical-align: top; padding: 0.5rem 0.5rem 0.5rem 0; border-bottom: 1px solid var(--acc-line-soft); }
+.prose th { font-weight: var(--acc-w-medium); color: var(--acc-primary); }
+.prose .table-wrap { overflow-x: auto; }
+.prose hr { border: 0; border-top: 1px solid var(--acc-line-soft); margin: 0.5rem 0; }
+
+/* Takkesiden: på mobil intro → kalender → kort. På desktop intro og kort til venstre, kalender til høyre. */
+.sub__grid--takk {
+  grid-template-areas: 'intro' 'cal' 'aside';
+}
+@media (min-width: 960px) {
+  .sub__grid--takk {
+    grid-template-columns: 5fr 6fr;
+    grid-template-areas: 'intro cal' 'aside cal';
+    align-items: start;
+  }
+}
+.hp input { background: transparent; color: inherit; border: 0; }

@@ -1,0 +1,27 @@
+/* Accountera – avstand, radius, bredder, bevegelse */
+:root {
+  --acc-s-1: 0.25rem;
+  --acc-s-2: 0.5rem;
+  --acc-s-3: 0.75rem;
+  --acc-s-4: 1rem;
+  --acc-s-5: 1.5rem;
+  --acc-s-6: 2rem;
+  --acc-s-7: 3rem;
+  --acc-s-8: 4rem;
+  --acc-s-9: 6rem;
+
+  --acc-gutter: 1.25rem;        /* 20 px sidemarg på mobil */
+  --acc-max: 1104px;            /* innholdsbredde ved 1440 (168 px marg) */
+  --acc-radius: 2px;
+  --acc-control-h: 3.5rem;      /* 56 px – felt og knapper, > 44 px trykkflate */
+  --acc-header-h: 4rem;         /* 64 px */
+  --acc-sticky-h: 5.25rem;      /* 84 px – sticky CTA og samtykkelinje på mobil */
+
+  --acc-diag-tan: 0.7265;       /* tan(36°) – diagonalen i DiagonalSplit */
+  --acc-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+@media (min-width: 960px) {
+  :root {
+    --acc-gutter: 2.5rem;
+  }
+}
