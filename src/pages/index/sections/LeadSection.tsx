@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import { Logo } from '../../../ds';
-import { proof, type Variant } from '../../../content/site';
+import { proof, testimonial, type Variant } from '../../../content/site';
 import { config } from '../../../lib/config';
 import type { Utm } from '../../../lib/storage';
 import { LeadForm } from '../LeadForm';
@@ -24,10 +24,10 @@ export function LeadSection({ variant, utm, sectionRef }: { variant: Variant; ut
               <li key={f}>{f}</li>
             ))}
           </ul>
-          {config.quote && (
+          {config.quoteApproved && (
             <figure className="quote">
-              <blockquote>{config.quote.text}</blockquote>
-              {config.quote.by && <figcaption className="ds-small ds-muted">{config.quote.by}</figcaption>}
+              <blockquote>«{testimonial.primary.quote}»</blockquote>
+              <figcaption className="ds-kicker">{testimonial.primary.credit}</figcaption>
             </figure>
           )}
         </div>

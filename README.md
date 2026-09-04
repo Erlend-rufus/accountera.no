@@ -38,8 +38,8 @@ Se `.env.example`. Ingen verdier i repoet. I produksjon settes de i Netlify unde
 | `VITE_CALENDLY_URL` | `/takk` | Takkesiden viser «Kalenderen lastet ikke. Vi ringer deg i stedet.» |
 | `VITE_META_PIXEL_ID` | Pixel i nettleseren, etter samtykke | Ingen pixel lastes |
 | `VITE_HERO_PHOTO` | Sti til hero-foto, f.eks. `/hero.jpg` i `public/` | Mønsteret vises (produksjon) |
-| `VITE_QUOTE` | Sitat i bevis-seksjonen, format `tekst\|navn, rolle` | Feltet rendres ikke |
 | `VITE_PRIVACY_APPROVED` | `/personvern`, sett til `true` når Accountera har godkjent teksten | Utkast-varselet vises øverst på siden |
+| `VITE_QUOTE_APPROVED` | Kundesitatet ved skjemaet, sett til `true` når skriftlig «ja» foreligger fra kunden | Sitatfeltet rendres ikke |
 | `CLICKUP_TOKEN` | `/api/lead` | Task opprettes ikke; leadet går til Zapier med `taskId: null`, loggen roper |
 | `ZAPIER_HOOK_URL` | `/api/lead` | Ingen varsling |
 | `META_PIXEL_ID`, `META_CAPI_TOKEN` | `/api/lead`, Conversions API | Ingen CAPI-hendelse |
@@ -73,7 +73,7 @@ node tests/e2e.cjs  # regresjonskontroll mot :4173 (krever build + preview + Chr
 ## Endre ting uten å røre koden
 
 - **Calendly-URL:** `VITE_CALENDLY_URL`. Fargene og `hide_gdpr_banner` legges på automatisk. Arrangementet må ha ett egendefinert spørsmål («Telefonnummer»); telefonen fylles inn som svar `a1`.
-- **Sitat:** `VITE_QUOTE="Sitatet.|Navn, rolle"`. Tomt = ingen sitatfelt. Finn aldri på ett.
+- **Sitat:** teksten ligger statisk i `src/content/site.ts` (`testimonial`), ikke i en miljøvariabel. Vises bare når `VITE_QUOTE_APPROVED=true` i Netlify, satt manuelt når skriftlig «ja» foreligger fra kunden. Standard er «false».
 - **Foto-modus:** legg bildet i `public/` og sett `VITE_HERO_PHOTO=/hero.jpg`. Tomt = mønster. Aldri plassholder.
 - **Tekster:** `src/content/site.ts` (sider) og `src/shared/form-content.ts` (skjema, valg, feilmeldinger). Feilmeldingene deles av nettleser og funksjon.
 - **Personvernerklæring:** `content/personvern.md`. Sett `VITE_PRIVACY_APPROVED=true` i Netlify når Accountera har godkjent teksten, så forsvinner utkast-varselet uten kodeendring.

@@ -99,6 +99,26 @@ export const proof = {
   facts: ['Autorisert regnskapsførerselskap', 'Sju ansatte i Kristiansand', 'Kunder over hele landet'],
 };
 
+/**
+ * Kundesitat ved skjemaet, statisk tekst (ikke CMS, ikke database). Fra en kunde Sondre ringte
+ * 4. september 2026. Gates bak config.quoteApproved, som er «false» inntil skriftlig «ja»
+ * foreligger, se tillegg til byggebrief 08. Ikke omskriv. Ingen navn, firmanavn eller by.
+ *
+ * Kunden ga tre sitater. Et tredje («byttet på grunn av pris») skal aldri brukes: kampanjens
+ * premiss er at usikkerhet er smertepunktet, ikke pris. To sitater finnes her for rotasjon;
+ * uten en rotasjonskomponent vises «primary» alene, som avtalt i tillegget.
+ */
+export const testimonial = {
+  primary: {
+    quote: 'Jeg får rask og god tilbakemelding, de står alltid på og er tilgjengelig for oss. God service',
+    credit: 'Daglig leder, omsorgsbransjen',
+  },
+  secondary: {
+    quote: 'Forskjellen er at Accountera er mye mer effektiv',
+    credit: 'Daglig leder, omsorgsbransjen',
+  },
+} as const;
+
 export const consent = {
   text: 'Vi bruker informasjonskapsler fra Meta for å måle annonsene våre.',
   accept: 'Godta',
