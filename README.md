@@ -9,7 +9,7 @@ Bygget etter byggebriefen av 3. september 2026. Vite + React (flersidig, statisk
 Leveransen inneholdt rendringene fra runde 1, men verken designsystemets zip («Accountera Design System») eller Claude Design-filen «Accountera Landingsside.dc.html» etter runde 2. Derfor:
 
 - **`src/ds/` er en rekonstruksjon** av designsystemet fra rendringene og briefen: tokens (tre farger, Outfit 100/400/500), `Logo` (vektor generert fra Outfit med opentype.js, E som tre streker), `BrandPattern`, `DiagonalSplit` (36°), `Button`, `Input`/`Select`/`Textarea`, `Notice`, `Card`. Når den ekte zipen foreligger, byttes innholdet i `src/ds/` ut, og komponent-API-ene tilpasses. Sidekoden importerer bare fra `src/ds/index.ts`.
-- **Tekstene** i `src/content/site.ts` og `src/shared/form-content.ts` er transkribert ordrett fra rendringene, med runde 2-endringene fra briefen. Tre ting finnes ikke i rendringene og må kontrolleres mot dc.html: valgene i de to nedtrekkene (bare «Fiken», «Bygg, anlegg og håndverk», «Landbruk og skogbruk» og «Energi og kraftproduksjon» er bekreftet), feilmeldingene (bare telefon-meldingen er bekreftet), og tittelen i bekreftet tilstand uten tidspunkt.
+- **Tekstene** i `src/content/site.ts` og `src/shared/form-content.ts` er transkribert ordrett fra rendringene, med runde 2-endringene fra briefen. Feilmeldingene i `errors` (`src/shared/form-content.ts`) er godkjent ord for ord (rettelse fra co-work-chatten, 4. september 2026). To ting gjenstår å kontrollere mot dc.html: valgene i de to nedtrekkene (bare «Fiken», «Bygg, anlegg og håndverk», «Landbruk og skogbruk» og «Energi og kraftproduksjon» er bekreftet) og tittelen i bekreftet tilstand uten tidspunkt.
 - Outfit ligger som variabel woff2 i `src/ds/assets/fonts/` (OFL) og serveres fra eget domene med `preload`.
 
 ## Struktur
@@ -39,6 +39,7 @@ Se `.env.example`. Ingen verdier i repoet. I produksjon settes de i Netlify unde
 | `VITE_META_PIXEL_ID` | Pixel i nettleseren, etter samtykke | Ingen pixel lastes |
 | `VITE_HERO_PHOTO` | Sti til hero-foto, f.eks. `/hero.jpg` i `public/` | Mønsteret vises (produksjon) |
 | `VITE_QUOTE` | Sitat i bevis-seksjonen, format `tekst\|navn, rolle` | Feltet rendres ikke |
+| `VITE_PRIVACY_APPROVED` | `/personvern`, sett til `true` når Accountera har godkjent teksten | Utkast-varselet vises øverst på siden |
 | `CLICKUP_TOKEN` | `/api/lead` | Task opprettes ikke; leadet går til Zapier med `taskId: null`, loggen roper |
 | `ZAPIER_HOOK_URL` | `/api/lead` | Ingen varsling |
 | `META_PIXEL_ID`, `META_CAPI_TOKEN` | `/api/lead`, Conversions API | Ingen CAPI-hendelse |
@@ -75,7 +76,7 @@ node tests/e2e.cjs  # regresjonskontroll mot :4173 (krever build + preview + Chr
 - **Sitat:** `VITE_QUOTE="Sitatet.|Navn, rolle"`. Tomt = ingen sitatfelt. Finn aldri på ett.
 - **Foto-modus:** legg bildet i `public/` og sett `VITE_HERO_PHOTO=/hero.jpg`. Tomt = mønster. Aldri plassholder.
 - **Tekster:** `src/content/site.ts` (sider) og `src/shared/form-content.ts` (skjema, valg, feilmeldinger). Feilmeldingene deles av nettleser og funksjon.
-- **Personvernerklæring:** `content/personvern.md`.
+- **Personvernerklæring:** `content/personvern.md`. Sett `VITE_PRIVACY_APPROVED=true` i Netlify når Accountera har godkjent teksten, så forsvinner utkast-varselet uten kodeendring.
 - **Utfallslogikk:** `DISQUALIFYING_BRANSJER` i `src/shared/form-content.ts`.
 
 ## Ruter og sporing

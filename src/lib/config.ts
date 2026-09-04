@@ -10,6 +10,8 @@ export const config = {
   heroPhoto: (env.VITE_HERO_PHOTO ?? '').trim(),
   /** «tekst|navn, rolle». Tom: sitatfeltet rendres ikke. Aldri finn på ett. */
   quote: parseQuote(env.VITE_QUOTE),
+  /** «true» når Accountera har godkjent personvernteksten. Før det vises utkast-varselet på /personvern. */
+  privacyApproved: (env.VITE_PRIVACY_APPROVED ?? '').trim().toLowerCase() === 'true',
 } as const;
 
 function parseQuote(raw?: string): { text: string; by: string } | null {

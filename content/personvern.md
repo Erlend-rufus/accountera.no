@@ -1,5 +1,3 @@
-**Utkast. Skal godkjennes av Accountera før lansering. Dette er ikke juridisk rådgivning.**
-
 Denne erklæringen gjelder leads.accountera.no, landingssiden der du kan be om en samtale med en regnskapsfører hos Accountera.
 
 ## Hvem som er ansvarlig
