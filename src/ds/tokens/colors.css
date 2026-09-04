@@ -1,0 +1,30 @@
+/* Accountera – fargetokens. Tre farger, ingen fjerde. Tinter lages med alpha av de samme tre. */
+:root {
+  --acc-primary: #133c62;
+  --acc-navy: #142838;
+  --acc-cream: #efece6;
+
+  /* Tinter (alpha av de tre) */
+  --acc-navy-a04: rgba(20, 40, 56, 0.04);
+  --acc-navy-a07: rgba(20, 40, 56, 0.07);
+  --acc-navy-a12: rgba(20, 40, 56, 0.12);
+  --acc-navy-a25: rgba(20, 40, 56, 0.25);
+  --acc-navy-a60: rgba(20, 40, 56, 0.6);
+  --acc-navy-a72: rgba(20, 40, 56, 0.72);
+  --acc-cream-a15: rgba(239, 236, 230, 0.15);
+  --acc-cream-a30: rgba(239, 236, 230, 0.3);
+  --acc-cream-a72: rgba(239, 236, 230, 0.72);
+  --acc-primary-a10: rgba(19, 60, 98, 0.1);
+  --acc-primary-a25: rgba(19, 60, 98, 0.25);
+  --acc-primary-a85: rgba(19, 60, 98, 0.85);
+
+  /* Semantikk */
+  --acc-bg: var(--acc-cream);
+  --acc-fg: var(--acc-navy);
+  --acc-fg-muted: var(--acc-navy-a72);
+  --acc-heading: var(--acc-primary);
+  --acc-line: var(--acc-navy-a25);
+  --acc-line-soft: var(--acc-navy-a12);
+  --acc-surface: var(--acc-navy-a07);
+  --acc-focus: var(--acc-primary);
+}
