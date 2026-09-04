@@ -219,7 +219,10 @@
   min-height: 700px;
   position: relative;
 }
-.cal__widget { min-height: 700px; width: 100%; }
+/* `height`, ikke `min-height`: Calendlys iframe ber om height:100%, som bare løser seg mot en fast høyde
+   på foreldreelementet. Med bare min-height faller nettleseren tilbake til iframens standardhøyde
+   (~150 px), og datogriden under månedsnavigasjonen blir usynlig selv om resten av kalenderen laster. */
+.cal__widget { height: 700px; width: 100%; }
 .cal__status {
   position: absolute;
   inset: 0;
@@ -231,7 +234,8 @@
   pointer-events: none;
 }
 @media (min-width: 960px) {
-  .cal, .cal__widget { min-height: 760px; }
+  .cal { min-height: 760px; }
+  .cal__widget { height: 760px; }
 }
 
 /* Personvern */
