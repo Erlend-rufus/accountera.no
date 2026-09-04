@@ -2,8 +2,9 @@
  * Skjematekster, valg og feilmeldinger. Delt mellom nettleser og funksjonen /api/lead, slik at feilmeldingene er like.
  * Ingen DOM-avhengigheter her.
  *
- * Feltnavn og rekkefølge er låst i briefens punkt 5. Valgene i nedtrekkene og feilmeldingene skal kontrolleres
- * ordrett mot «Accountera Landingsside.dc.html» etter runde 2. «Fiken», «Bygg, anlegg og håndverk»,
+ * Feltnavn og rekkefølge er låst i briefens punkt 5. Feilmeldingene under `errors` er godkjent ord for ord
+ * (rettelse fra co-work-chatten, 4. september 2026). Valgene i nedtrekkene skal fortsatt kontrolleres
+ * mot «Accountera Landingsside.dc.html» etter runde 2. «Fiken», «Bygg, anlegg og håndverk»,
  * «Landbruk og skogbruk» og «Energi og kraftproduksjon» er bekreftet fra rendringene.
  */
 export const labels = {
@@ -56,13 +57,13 @@ export const DISQUALIFYING_BRANSJER: readonly string[] = ['Landbruk og skogbruk'
 export const MSG_MAX = 2000;
 
 export const errors = {
-  name: 'Vi trenger navnet ditt.',
-  company: 'Vi trenger navnet på bedriften.',
+  name: 'Vi trenger navnet ditt for å vite hvem vi skal ringe.',
+  company: 'Vi trenger firmanavnet for å finne virksomheten i Enhetsregisteret.',
   telMissing: 'Vi trenger et telefonnummer for å ringe deg tilbake.',
-  telInvalid: 'Sjekk telefonnummeret. Åtte sifre, med eller uten +47.',
-  emailMissing: 'Vi trenger e-postadressen din for bekreftelsen.',
-  emailInvalid: 'Sjekk e-postadressen.',
-  program: 'Velg regnskapsprogrammet du bruker i dag.',
-  bransje: 'Velg hva bedriften driver med.',
+  telInvalid: 'Telefonnummeret må være et norsk nummer med åtte sifre.',
+  emailMissing: 'Vi trenger e-postadressen for å sende deg bekreftelsen på tidspunktet.',
+  emailInvalid: 'Sjekk e-postadressen. Den ser ikke ut til å være gyldig.',
+  program: 'Velg det som ligger nærmest, så vet regnskapsføreren hvor dere står.',
+  bransje: 'Velg bransjen som ligger nærmest.',
   msgTooLong: 'Meldingen kan være på inntil 2000 tegn.',
 } as const;

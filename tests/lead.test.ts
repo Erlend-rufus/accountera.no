@@ -162,7 +162,7 @@ describe('/api/lead', () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { errors: { field: string; message: string }[] };
     expect(body.errors.map((e) => e.field)).toEqual(['tel', 'email']);
-    expect(body.errors[0].message).toBe('Sjekk telefonnummeret. Åtte sifre, med eller uten +47.');
+    expect(body.errors[0].message).toBe('Telefonnummeret må være et norsk nummer med åtte sifre.');
     expect(calls).toHaveLength(0);
   });
 
