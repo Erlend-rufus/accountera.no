@@ -2,9 +2,9 @@
  * Validering av skjemaet. Kjøres både i nettleseren (opplevelsen) og i funksjonen (fordi nettleseren ikke kan stoles på).
  * Samme regler, samme tekster. Ingen DOM-avhengigheter.
  */
-import { BRANSJE_OPTIONS, DISQUALIFYING_BRANSJER, MSG_MAX, PROGRAM_OPTIONS, errors } from './form-content';
+import { BRANSJE_OPTIONS, DISQUALIFYING_BRANSJER, MSG_MAX, PROGRAM_OPTIONS, REGNSKAPSFORER_OPTIONS, errors } from './form-content';
 
-export type LeadFieldName = 'name' | 'company' | 'tel' | 'email' | 'program' | 'bransje' | 'msg';
+export type LeadFieldName = 'name' | 'company' | 'tel' | 'email' | 'regnskapsforer' | 'program' | 'bransje' | 'msg';
 
 export type LeadFields = {
   name: string;
@@ -12,6 +12,8 @@ export type LeadFields = {
   /** Åtte sifre uten landkode, f.eks. «40156666». */
   tel: string;
   email: string;
+  /** Har du regnskapsfører i dag? Måler sammensetning, påvirker ikke kvalifisering (tillegg til byggebrief 08). */
+  regnskapsforer: string;
   program: string;
   bransje: string;
   msg: string;
@@ -23,7 +25,7 @@ export type ValidationResult = { ok: true; data: LeadFields } | { ok: false; err
 
 export type Outcome = 'kvalifisert' | 'diskvalifisert';
 
-const FIELD_ORDER: LeadFieldName[] = ['name', 'company', 'tel', 'email', 'program', 'bransje', 'msg'];
+const FIELD_ORDER: LeadFieldName[] = ['name', 'company', 'tel', 'email', 'regnskapsforer', 'program', 'bransje', 'msg'];
 
 function str(v: unknown): string {
   if (typeof v === 'string') return v;
@@ -68,6 +70,7 @@ export function validateLead(input: Record<string, unknown>): ValidationResult {
   const company = str(input.company).trim();
   const telRaw = str(input.tel).trim();
   const email = str(input.email).trim();
+  const regnskapsforer = str(input.regnskapsforer).trim();
   const program = str(input.program).trim();
   const bransje = str(input.bransje).trim();
   const msg = str(input.msg).trim();
@@ -86,6 +89,7 @@ export function validateLead(input: Record<string, unknown>): ValidationResult {
   if (!email) errs.push({ field: 'email', message: errors.emailMissing });
   else if (!isValidEmail(email)) errs.push({ field: 'email', message: errors.emailInvalid });
 
+  if (!(REGNSKAPSFORER_OPTIONS as readonly string[]).includes(regnskapsforer)) errs.push({ field: 'regnskapsforer', message: errors.regnskapsforer });
   if (!(PROGRAM_OPTIONS as readonly string[]).includes(program)) errs.push({ field: 'program', message: errors.program });
   if (!(BRANSJE_OPTIONS as readonly string[]).includes(bransje)) errs.push({ field: 'bransje', message: errors.bransje });
 
@@ -95,7 +99,7 @@ export function validateLead(input: Record<string, unknown>): ValidationResult {
     errs.sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field));
     return { ok: false, errors: errs };
   }
-  return { ok: true, data: { name, company, tel, email: email.toLowerCase(), program, bransje, msg } };
+  return { ok: true, data: { name, company, tel, email: email.toLowerCase(), regnskapsforer, program, bransje, msg } };
 }
 
 /** Skjulte felt som følger med skjemaet. */

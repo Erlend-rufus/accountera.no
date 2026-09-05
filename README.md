@@ -38,6 +38,7 @@ Se `.env.example`. Ingen verdier i repoet. I produksjon settes de i Netlify unde
 | `VITE_CALENDLY_URL` | `/takk` | Takkesiden viser «Kalenderen lastet ikke. Vi ringer deg i stedet.» |
 | `VITE_META_PIXEL_ID` | Pixel i nettleseren, etter samtykke | Ingen pixel lastes |
 | `VITE_HERO_PHOTO` | Sti til hero-foto, f.eks. `/hero.jpg` i `public/` | Mønsteret vises (produksjon) |
+| `VITE_HERO_A_ENABLED` | Sett til `true` for å ta hero-variant A tilbake i rotasjon | `?v=a` faller tilbake til variant C |
 | `VITE_PRIVACY_APPROVED` | `/personvern`, sett til `true` når Accountera har godkjent teksten | Utkast-varselet vises øverst på siden |
 | `VITE_QUOTE_APPROVED` | Kundesitatet ved skjemaet, sett til `true` når skriftlig «ja» foreligger fra kunden | Sitatfeltet rendres ikke |
 | `CLICKUP_TOKEN` | `/api/lead` | Task opprettes ikke; leadet går til Zapier med `taskId: null`, loggen roper |
@@ -75,6 +76,7 @@ node tests/e2e.cjs  # regresjonskontroll mot :4173 (krever build + preview + Chr
 - **Calendly-URL:** `VITE_CALENDLY_URL`. Fargene og `hide_gdpr_banner` legges på automatisk. Arrangementet må ha ett egendefinert spørsmål («Telefonnummer»); telefonen fylles inn som svar `a1`.
 - **Sitat:** teksten ligger statisk i `src/content/site.ts` (`testimonial`), ikke i en miljøvariabel. Vises bare når `VITE_QUOTE_APPROVED=true` i Netlify, satt manuelt når skriftlig «ja» foreligger fra kunden. Standard er «false».
 - **Foto-modus:** legg bildet i `public/` og sett `VITE_HERO_PHOTO=/hero.jpg`. Tomt = mønster. Aldri plassholder.
+- **Hero-variant A:** tatt ut av rotasjon (tillegg til byggebrief 08, 5. september 2026). `VITE_HERO_A_ENABLED=true` henter den tilbake. Av: `?v=a` faller tilbake til variant C i `src/lib/variant.ts`, før noe annet leser variant, så hero, kortrekkefølge, tellere og skjemaets skjulte `v`-felt alle får C.
 - **Tekster:** `src/content/site.ts` (sider) og `src/shared/form-content.ts` (skjema, valg, feilmeldinger). Feilmeldingene deles av nettleser og funksjon.
 - **Personvernerklæring:** `content/personvern.md`. Sett `VITE_PRIVACY_APPROVED=true` i Netlify når Accountera har godkjent teksten, så forsvinner utkast-varselet uten kodeendring.
 - **Utfallslogikk:** `DISQUALIFYING_BRANSJER` i `src/shared/form-content.ts`.
@@ -96,7 +98,9 @@ Alle ruter er `noindex` (meta og `X-Robots-Tag`), `robots.txt` avviser alt.
 
 ## Funksjonen `/api/lead`
 
-Rekkefølgen er briefens punkt 6: stille spamavvisning (honningfelle eller under tre sekunder etter `t0`), validering med samme regler og tekster som i nettleseren, utfall fra bransje, oppslag i Enhetsregisteret (3 s tidsavbrudd, blokkerer aldri), ClickUp-task med tagger `vinkel-a|b|c` og `kvalifisert|diskvalifisert|ikke-verifisert` (pluss `duplikat` ved samme telefonnummer siste 24 timer), Zapier Catch Hook, Meta CAPI ved samtykke, svar `{ leadId, taskId, utfall }`. Feiler ClickUp to ganger, får Zapier leadet med `taskId: null`, leseren får suksess, og loggen skriver `lead.clickup_failed` og `lead.lost_no_task_no_zapier` hvis også Zapier mangler.
+Rekkefølgen er briefens punkt 6: stille spamavvisning (honningfelle eller under tre sekunder etter `t0`), validering med samme regler og tekster som i nettleseren, utfall fra bransje, oppslag i Enhetsregisteret (3 s tidsavbrudd, blokkerer aldri), ClickUp-task med tagger `vinkel-a|b|c` og `kvalifisert|diskvalifisert|ikke-verifisert` (pluss `duplikat` ved samme telefonnummer siste 24 timer, og `har-byraa|foerer-selv|tidligere-byraa` fra det nye feltet «Har du regnskapsfører i dag?»), Zapier Catch Hook, Meta CAPI ved samtykke, svar `{ leadId, taskId, utfall }`. Feiler ClickUp to ganger, får Zapier leadet med `taskId: null`, leseren får suksess, og loggen skriver `lead.clickup_failed` og `lead.lost_no_task_no_zapier` hvis også Zapier mangler.
+
+«Har du regnskapsfører i dag?» (tillegg til byggebrief 08, 5. september 2026) måler bare sammensetningen av henvendelser. Den påvirker aldri `utfall`/kvalifisering, som fortsatt bare bygger på bransje (`decideOutcome` i `src/shared/validate.ts`).
 
 Loggen inneholder `leadId`, utfall og hvilke steg som lyktes. Aldri navn, telefon eller e-post.
 

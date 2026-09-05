@@ -63,6 +63,7 @@ const valid = {
   company: 'Eksempel AS',
   tel: '+47 40 15 66 66',
   email: 'Kari.Nordmann@Example.com',
+  regnskapsforer: 'Nei, jeg fører selv',
   program: 'Fiken',
   bransje: 'Bygg, anlegg og håndverk',
   msg: 'Har ført selv i tre år.',
@@ -83,15 +84,16 @@ describe('validateLead', () => {
     expect(validateLead({ ...valid, msg: undefined }).ok).toBe(true);
   });
   it('gir feil i feltrekkefølge med de avtalte tekstene', () => {
-    const r = validateLead({ ...valid, name: '', tel: '123', email: '', program: 'Ukjent', bransje: '' });
+    const r = validateLead({ ...valid, name: '', tel: '123', email: '', regnskapsforer: '', program: 'Ukjent', bransje: '' });
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.errors.map((e) => e.field)).toEqual(['name', 'tel', 'email', 'program', 'bransje']);
+      expect(r.errors.map((e) => e.field)).toEqual(['name', 'tel', 'email', 'regnskapsforer', 'program', 'bransje']);
       expect(r.errors[0].message).toBe(errors.name);
       expect(r.errors[1].message).toBe(errors.telInvalid);
       expect(r.errors[2].message).toBe(errors.emailMissing);
-      expect(r.errors[3].message).toBe(errors.program);
-      expect(r.errors[4].message).toBe(errors.bransje);
+      expect(r.errors[3].message).toBe(errors.regnskapsforer);
+      expect(r.errors[4].message).toBe(errors.program);
+      expect(r.errors[5].message).toBe(errors.bransje);
     }
   });
   it('manglende telefon gir «Vi trenger et telefonnummer for å ringe deg tilbake.»', () => {
@@ -106,6 +108,7 @@ describe('validateLead', () => {
     expect(validateLead({ ...valid, msg: 'x'.repeat(2000) }).ok).toBe(true);
   });
   it('avviser verdier utenfor listene', () => {
+    expect(validateLead({ ...valid, regnskapsforer: 'Kanskje' }).ok).toBe(false);
     expect(validateLead({ ...valid, program: 'fiken' }).ok).toBe(false);
     expect(validateLead({ ...valid, bransje: 'Landbruk' }).ok).toBe(false);
   });
