@@ -1,14 +1,14 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Button, Input, Notice, Select, Textarea } from '../../ds';
 import { site, type Variant } from '../../content/site';
-import { BRANSJE_OPTIONS, MSG_MAX, PROGRAM_OPTIONS, labels } from '../../shared/form-content';
+import { BRANSJE_OPTIONS, MSG_MAX, PROGRAM_OPTIONS, REGNSKAPSFORER_OPTIONS, labels } from '../../shared/form-content';
 import { toE164, validateLead, type FieldError, type LeadFieldName } from '../../shared/validate';
 import { getConsent } from '../../lib/consent';
 import { setStoredLead, type Utm } from '../../lib/storage';
 import { firstName } from '../../lib/format';
 
 type Values = Record<LeadFieldName, string>;
-const initial: Values = { name: '', company: '', tel: '', email: '', program: '', bransje: '', msg: '' };
+const initial: Values = { name: '', company: '', tel: '', email: '', regnskapsforer: '', program: '', bransje: '', msg: '' };
 
 type LeadResponse = { leadId: string; taskId: string | null; utfall: 'kvalifisert' | 'diskvalifisert' };
 
@@ -109,6 +109,7 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
       <Input id="f-company" name="company" label={labels.company} type="text" autoComplete="organization" aria-required="true" value={values.company} onChange={update('company')} error={errors.company} />
       <Input id="f-tel" name="tel" label={labels.tel} hint={labels.telHint} type="tel" inputMode="tel" autoComplete="tel" aria-required="true" value={values.tel} onChange={update('tel')} error={errors.tel} />
       <Input id="f-email" name="email" label={labels.email} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" aria-required="true" value={values.email} onChange={update('email')} error={errors.email} />
+      <Select id="f-regnskapsforer" name="regnskapsforer" label={labels.regnskapsforer} options={REGNSKAPSFORER_OPTIONS} placeholder={labels.select} aria-required="true" value={values.regnskapsforer} onChange={update('regnskapsforer')} error={errors.regnskapsforer} />
       <Select id="f-program" name="program" label={labels.program} options={PROGRAM_OPTIONS} placeholder={labels.select} aria-required="true" value={values.program} onChange={update('program')} error={errors.program} />
       <Select id="f-bransje" name="bransje" label={labels.bransje} options={BRANSJE_OPTIONS} placeholder={labels.select} aria-required="true" value={values.bransje} onChange={update('bransje')} error={errors.bransje} />
       <Textarea id="f-msg" name="msg" label={labels.msg} optional optionalLabel={labels.optional} maxLength={MSG_MAX} rows={4} value={values.msg} onChange={update('msg')} error={errors.msg} />

@@ -121,13 +121,14 @@ async function audit(page, label, width) {
         const focused = await page.evaluate(() => document.activeElement && document.activeElement.id);
         if (focused !== 'f-name') problems.push(`index-a@390: første feilfelt fikk ikke fokus (aktivt: ${focused})`);
         const errCount = await page.$$eval('.ds-field__error', (els) => els.length);
-        if (errCount !== 6) problems.push(`index-a@390: ventet 6 feilmeldinger, fikk ${errCount}`);
+        if (errCount !== 7) problems.push(`index-a@390: ventet 7 feilmeldinger, fikk ${errCount}`);
         await page.screenshot({ path: path.join(OUT, `index-a-390-feil.png`), fullPage: true });
         problems.push(...(await audit(page, 'index-a-feil', width)));
         // Ugyldig telefon og tom e-post
         await page.fill('#f-name', 'Kari Nordmann');
         await page.fill('#f-company', 'Eksempel AS');
         await page.fill('#f-tel', '123');
+        await page.selectOption('#f-regnskapsforer', 'Nei, jeg fører selv');
         await page.selectOption('#f-program', 'Fiken');
         await page.selectOption('#f-bransje', 'Bygg, anlegg og håndverk');
         await page.click('button[type=submit]');

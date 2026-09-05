@@ -1,6 +1,7 @@
 import type { BrregMatch } from '../../src/shared/brreg';
 import type { LeadFields, LeadMeta, Outcome } from '../../src/shared/validate';
 import { formatPhone, toE164 } from '../../src/shared/validate';
+import { REGNSKAPSFORER_TAGS } from '../../src/shared/form-content';
 
 export type TaskFacts = {
   lead: LeadFields;
@@ -16,13 +17,19 @@ export function taskName(lead: LeadFields): string {
   return `${lead.company} · ${lead.name}`;
 }
 
-/** Tagger: vinkel-a|b|c, og kvalifisert, diskvalifisert eller ikke-verifisert. Pluss duplikat ved behov. */
-export function buildTags(f: Pick<TaskFacts, 'meta' | 'outcome' | 'brreg' | 'duplicate'>): string[] {
+/**
+ * Tagger: vinkel-a|b|c, og kvalifisert, diskvalifisert eller ikke-verifisert. Pluss duplikat ved behov,
+ * og en tagg for regnskapsfører i dag (har-byraa | foerer-selv | tidligere-byraa). Sistnevnte måler
+ * bare sammensetning og påvirker aldri f.outcome (tillegg til byggebrief 08, 5. september 2026).
+ */
+export function buildTags(f: Pick<TaskFacts, 'meta' | 'outcome' | 'brreg' | 'duplicate' | 'lead'>): string[] {
   const tags = [`vinkel-${f.meta.v}`];
   if (f.outcome === 'diskvalifisert') tags.push('diskvalifisert');
   else if (f.brreg.status === 'verifisert') tags.push('kvalifisert');
   else tags.push('ikke-verifisert');
   if (f.duplicate) tags.push('duplikat');
+  const regnskapsforerTag = REGNSKAPSFORER_TAGS[f.lead.regnskapsforer];
+  if (regnskapsforerTag) tags.push(regnskapsforerTag);
   return tags;
 }
 
@@ -50,6 +57,7 @@ export function buildDescription(f: TaskFacts): string {
   const lines: string[] = [];
   lines.push(`**Telefon:** [${formatPhone(lead.tel)}](tel:${toE164(lead.tel)})`);
   lines.push(`**E-post:** ${esc(lead.email)}`);
+  lines.push(`**Har regnskapsfører i dag:** ${esc(lead.regnskapsforer)}`);
   lines.push(`**Regnskapsprogram:** ${esc(lead.program)}`);
   lines.push(`**Bransje:** ${esc(lead.bransje)}`);
   lines.push('');

@@ -10,6 +10,7 @@ const lead: LeadFields = {
   company: 'Eksempel AS',
   tel: '40156666',
   email: 'kari@example.com',
+  regnskapsforer: 'Nei, jeg fører selv',
   program: 'Fiken',
   bransje: 'Bygg, anlegg og håndverk',
   msg: 'Fikk brev fra Skatteetaten.',
@@ -27,18 +28,25 @@ const base: TaskFacts = {
 
 describe('tagger og prioritet', () => {
   it('kvalifisert og verifisert', () => {
-    expect(buildTags(base)).toEqual(['vinkel-b', 'kvalifisert']);
+    expect(buildTags(base)).toEqual(['vinkel-b', 'kvalifisert', 'foerer-selv']);
     expect(priorityFor('kvalifisert')).toBe(1);
   });
   it('kvalifisert men ikke verifisert', () => {
-    expect(buildTags({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } })).toEqual(['vinkel-b', 'ikke-verifisert']);
+    expect(buildTags({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } })).toEqual(['vinkel-b', 'ikke-verifisert', 'foerer-selv']);
   });
   it('diskvalifisert har lav prioritet, uansett verifisering', () => {
-    expect(buildTags({ ...base, outcome: 'diskvalifisert' })).toEqual(['vinkel-b', 'diskvalifisert']);
+    expect(buildTags({ ...base, outcome: 'diskvalifisert' })).toEqual(['vinkel-b', 'diskvalifisert', 'foerer-selv']);
     expect(priorityFor('diskvalifisert')).toBe(4);
   });
   it('duplikat legges til', () => {
-    expect(buildTags({ ...base, duplicate: true })).toEqual(['vinkel-b', 'kvalifisert', 'duplikat']);
+    expect(buildTags({ ...base, duplicate: true })).toEqual(['vinkel-b', 'kvalifisert', 'duplikat', 'foerer-selv']);
+  });
+  it('regnskapsfører-svar gir riktig tagg, og påvirker ikke kvalifisering', () => {
+    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: 'Ja, jeg bruker et regnskapsbyrå' } })).toEqual(['vinkel-b', 'kvalifisert', 'har-byraa']);
+    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: 'Nei, men jeg har hatt det tidligere' } })).toEqual(['vinkel-b', 'kvalifisert', 'tidligere-byraa']);
+  });
+  it('ukjent regnskapsfører-svar legger ikke til noen tagg', () => {
+    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: '' } })).toEqual(['vinkel-b', 'kvalifisert']);
   });
 });
 
@@ -55,6 +63,7 @@ describe('beskrivelse', () => {
     expect(d).toContain('14:30');
     expect(d).toContain('**leadId:** lead-1');
     expect(d).toContain('Fikk brev fra Skatteetaten.');
+    expect(d).toContain('**Har regnskapsfører i dag:** Nei, jeg fører selv');
   });
   it('lister kandidater når ikke verifisert', () => {
     const d = buildDescription({

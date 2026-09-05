@@ -1,6 +1,7 @@
 import { parseVariant } from '../shared/validate';
 import { getStoredUtm, getStoredVariant, setStoredUtm, setStoredVariant, type Utm } from './storage';
 import type { Variant } from '../content/site';
+import { config } from './config';
 
 /**
  * Leser ?v= og UTM/fbclid fra URL ved lasting og lagrer dem i sessionStorage.
@@ -16,6 +17,10 @@ export function initVariant(): { variant: Variant; utm: Utm } {
     const stored = getStoredVariant();
     variant = stored ? parseVariant(stored) : 'a';
   }
+  // Variant A er tatt ut av rotasjon inntil config.heroAEnabled er satt (tillegg til byggebrief 08,
+  // 5. september 2026). Faller tilbake til C. Løses her, før noe annet leser variant, slik at hero,
+  // «Kjenner du deg igjen»-kortrekkefølgen, tellere og skjemaets skjulte v-felt alle får C, ikke A.
+  if (variant === 'a' && !config.heroAEnabled) variant = 'c';
   setStoredVariant(variant);
 
   const stored = getStoredUtm();

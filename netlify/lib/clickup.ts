@@ -17,7 +17,18 @@ export type TaskInput = {
 
 export type CreatedTask = { id: string; url: string };
 
-const REQUIRED_TAGS = ['vinkel-a', 'vinkel-b', 'vinkel-c', 'kvalifisert', 'diskvalifisert', 'ikke-verifisert', 'duplikat'];
+const REQUIRED_TAGS = [
+  'vinkel-a',
+  'vinkel-b',
+  'vinkel-c',
+  'kvalifisert',
+  'diskvalifisert',
+  'ikke-verifisert',
+  'duplikat',
+  'har-byraa',
+  'foerer-selv',
+  'tidligere-byraa',
+];
 
 let tagsEnsured: Promise<void> | null = null;
 

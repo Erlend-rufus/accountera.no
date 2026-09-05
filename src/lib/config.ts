@@ -8,6 +8,12 @@ export const config = {
   metaPixelId: (env.VITE_META_PIXEL_ID ?? '').trim(),
   /** Sti til hero-foto, f.eks. «/hero.jpg». Tom: mønsteret vises. Aldri en plassholder. */
   heroPhoto: (env.VITE_HERO_PHOTO ?? '').trim(),
+  /**
+   * «true» for å ta hero-variant A tilbake inn i rotasjon. Standard «false»: Accountera vil foreløpig
+   * ikke bygge kampanjen rundt «kaos-kunden» variant A er skrevet til. Se tillegg til byggebrief 08,
+   * 5. september 2026. `?v=a` faller da tilbake til variant C, se src/lib/variant.ts.
+   */
+  heroAEnabled: (env.VITE_HERO_A_ENABLED ?? '').trim().toLowerCase() === 'true',
   /** «true» når Accountera har godkjent personvernteksten. Før det vises utkast-varselet på /personvern. */
   privacyApproved: (env.VITE_PRIVACY_APPROVED ?? '').trim().toLowerCase() === 'true',
   /**

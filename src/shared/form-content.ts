@@ -2,10 +2,12 @@
  * Skjematekster, valg og feilmeldinger. Delt mellom nettleser og funksjonen /api/lead, slik at feilmeldingene er like.
  * Ingen DOM-avhengigheter her.
  *
- * Feltnavn og rekkefølge er låst i briefens punkt 5. Feilmeldingene under `errors` er godkjent ord for ord
- * (rettelse fra co-work-chatten, 4. september 2026). Valgene i nedtrekkene skal fortsatt kontrolleres
- * mot «Accountera Landingsside.dc.html» etter runde 2. «Fiken», «Bygg, anlegg og håndverk»,
- * «Landbruk og skogbruk» og «Energi og kraftproduksjon» er bekreftet fra rendringene.
+ * Feltnavn og rekkefølge er låst i briefens punkt 5, utvidet med feltet `regnskapsforer` (tillegg til
+ * byggebrief 08, 5. september 2026, inn før `program`). Feilmeldingene under `errors` er godkjent ord
+ * for ord (rettelse fra co-work-chatten, 4. september 2026), unntatt `regnskapsforer`, som er nytt og
+ * følger samme mønster men ikke er ordrett godkjent av noen kilde. Valgene i program/bransje-nedtrekkene
+ * skal fortsatt kontrolleres mot «Accountera Landingsside.dc.html» etter runde 2. «Fiken», «Bygg, anlegg
+ * og håndverk», «Landbruk og skogbruk» og «Energi og kraftproduksjon» er bekreftet fra rendringene.
  */
 export const labels = {
   name: 'Navn',
@@ -13,6 +15,7 @@ export const labels = {
   tel: 'Telefon',
   telHint: 'Vi ringer fra et norsk nummer.',
   email: 'E-post',
+  regnskapsforer: 'Har du regnskapsfører i dag?',
   program: 'Hvilket regnskapsprogram bruker du i dag?',
   bransje: 'Hva driver bedriften med?',
   msg: 'Hva gjelder det?',
@@ -25,6 +28,19 @@ export const labels = {
   networkError: 'Vi fikk ikke sendt meldingen. Prøv igjen, eller ring 40 15 66 66.',
   errorSummary: 'Noen felt mangler. Sjekk feltene som er merket.',
 } as const;
+
+export const REGNSKAPSFORER_OPTIONS = [
+  'Ja, jeg bruker et regnskapsbyrå',
+  'Nei, jeg fører selv',
+  'Nei, men jeg har hatt det tidligere',
+] as const;
+
+/** ClickUp-tagg per svar. Måler sammensetningen av henvendelser, påvirker ikke kvalifisering. */
+export const REGNSKAPSFORER_TAGS: Record<string, string> = {
+  'Ja, jeg bruker et regnskapsbyrå': 'har-byraa',
+  'Nei, jeg fører selv': 'foerer-selv',
+  'Nei, men jeg har hatt det tidligere': 'tidligere-byraa',
+};
 
 export const PROGRAM_OPTIONS = [
   'Fiken',
@@ -63,6 +79,7 @@ export const errors = {
   telInvalid: 'Telefonnummeret må være et norsk nummer med åtte sifre.',
   emailMissing: 'Vi trenger e-postadressen for å sende deg bekreftelsen på tidspunktet.',
   emailInvalid: 'Sjekk e-postadressen. Den ser ikke ut til å være gyldig.',
+  regnskapsforer: 'Velg det som stemmer for dere i dag.',
   program: 'Velg det som ligger nærmest, så vet regnskapsføreren hvor dere står.',
   bransje: 'Velg bransjen som ligger nærmest.',
   msgTooLong: 'Meldingen kan være på inntil 2000 tegn.',

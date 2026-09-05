@@ -81,6 +81,7 @@ export default async function handler(req: Request, context: Context): Promise<R
       company: lead.company,
       tel: toE164(lead.tel),
       email: lead.email,
+      regnskapsforer: lead.regnskapsforer,
       program: lead.program,
       bransje: lead.bransje,
       msg: lead.msg,

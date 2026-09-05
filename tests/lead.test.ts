@@ -43,6 +43,7 @@ const validBody = {
   company: 'Eksempel AS',
   tel: '+47 40 15 66 66',
   email: 'kari@example.com',
+  regnskapsforer: 'Ja, jeg bruker et regnskapsbyrå',
   program: 'Fiken',
   bransje: 'Bygg, anlegg og håndverk',
   msg: 'Fikk brev.',
@@ -98,7 +99,7 @@ describe('/api/lead', () => {
     expect(clickup).toBeDefined();
     const task = JSON.parse(String(clickup!.init!.body)) as { name: string; tags: string[]; priority: number; markdown_description: string };
     expect(task.name).toBe('Eksempel AS · Kari Nordmann');
-    expect(task.tags).toEqual(['vinkel-a', 'kvalifisert']);
+    expect(task.tags).toEqual(['vinkel-a', 'kvalifisert', 'har-byraa']);
     expect(task.priority).toBe(1);
     expect(task.markdown_description).toContain('926445936');
     expect((clickup!.init!.headers as Record<string, string>).authorization).toBe('pk_test');
@@ -110,6 +111,7 @@ describe('/api/lead', () => {
     expect(zapBody.verifisert).toBe(true);
     expect(zapBody.tel).toBe('+4740156666');
     expect(zapBody.leadId).toBe(body.leadId);
+    expect(zapBody.regnskapsforer).toBe('Ja, jeg bruker et regnskapsbyrå');
 
     const capi = calls.find((c) => c.url.startsWith('https://graph.facebook.com/'));
     expect(capi).toBeDefined();
@@ -135,7 +137,7 @@ describe('/api/lead', () => {
     expect(body.utfall).toBe('diskvalifisert');
     const clickup = calls.find((c) => c.url.includes('/list/901525768674/task'));
     const task = JSON.parse(String(clickup!.init!.body)) as { tags: string[]; priority: number };
-    expect(task.tags).toEqual(['vinkel-a', 'diskvalifisert']);
+    expect(task.tags).toEqual(['vinkel-a', 'diskvalifisert', 'har-byraa']);
     expect(task.priority).toBe(4);
   });
 
@@ -195,7 +197,7 @@ describe('/api/lead', () => {
     expect(res.status).toBe(200);
     const clickup = calls.find((c) => c.url.includes('/list/901525768674/task'));
     const task = JSON.parse(String(clickup!.init!.body)) as { tags: string[]; markdown_description: string };
-    expect(task.tags).toEqual(['vinkel-a', 'ikke-verifisert']);
+    expect(task.tags).toEqual(['vinkel-a', 'ikke-verifisert', 'har-byraa']);
     expect(task.markdown_description).toContain('Ikke verifisert');
   });
 
