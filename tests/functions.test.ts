@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildDescription, buildTags, priorityFor, taskName, type TaskFacts } from '../netlify/lib/describe';
+import { buildDescription, buildSheetPayload, buildTags, priorityFor, taskName, type TaskFacts } from '../netlify/lib/describe';
 import { buildLeadEvent, fbcFromClid, hashEmail, hashPhone } from '../netlify/lib/meta';
 import { lookupCompany } from '../netlify/lib/brreg';
 import { pageKeyFrom, osloDate } from '../netlify/lib/counters';
+import { postToZapier } from '../netlify/lib/zapier';
 import type { LeadFields, LeadMeta } from '../src/shared/validate';
 
 const lead: LeadFields = {
@@ -127,5 +128,91 @@ describe('tellere', () => {
   it('dato i norsk tid', () => {
     expect(osloDate(Date.UTC(2026, 8, 3, 23, 30))).toBe('2026-09-04');
     expect(osloDate(Date.UTC(2026, 0, 3, 23, 30))).toBe('2026-01-04');
+  });
+});
+
+describe('buildSheetPayload (nyttelast mot Zapier → Google Sheet)', () => {
+  it('inneholder eksakt de avtalte nøklene, med riktige verdier ved verifisert treff', () => {
+    const p = buildSheetPayload(base, 'https://app.clickup.com/t/task1');
+    expect(Object.keys(p).sort()).toEqual(
+      [
+        'bransje',
+        'brreg_treff',
+        'clickup_url',
+        'epost',
+        'firma',
+        'har_regnskapsforer',
+        'kvalifisert',
+        'melding',
+        'navn',
+        'orgnr',
+        'regnskapsprogram',
+        'telefon',
+        'timestamp',
+        'utm_campaign',
+        'utm_content',
+        'utm_source',
+        'vinkel',
+      ].sort(),
+    );
+    expect(p.navn).toBe('Kari Nordmann');
+    expect(p.firma).toBe('Eksempel AS');
+    expect(p.telefon).toBe('+4740156666');
+    expect(p.epost).toBe('kari@example.com');
+    expect(p.har_regnskapsforer).toBe('Nei, jeg fører selv');
+    expect(p.regnskapsprogram).toBe('Fiken');
+    expect(p.bransje).toBe('Bygg, anlegg og håndverk');
+    expect(p.melding).toBe('Fikk brev fra Skatteetaten.');
+    expect(p.vinkel).toBe('b');
+    expect(p.utm_source).toBe('fb');
+    expect(p.utm_campaign).toBe('sept');
+    expect(p.utm_content).toBe('ad1');
+    expect(p.orgnr).toBe('926445936');
+    expect(p.brreg_treff).toBe('ja');
+    expect(p.kvalifisert).toBe('ja');
+    expect(p.clickup_url).toBe('https://app.clickup.com/t/task1');
+    expect(new Date(p.timestamp).toISOString()).toBe(p.timestamp);
+  });
+  it('ikke verifisert i Enhetsregisteret, men ikke diskvalifisert: kvalifisert = ikke verifisert', () => {
+    const p = buildSheetPayload({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } }, '');
+    expect(p.brreg_treff).toBe('nei');
+    expect(p.kvalifisert).toBe('ikke verifisert');
+    expect(p.orgnr).toBe('');
+    expect(p.clickup_url).toBe('');
+  });
+  it('diskvalifisert bransje: kvalifisert = nei, uansett Enhetsregisteret', () => {
+    const p = buildSheetPayload({ ...base, outcome: 'diskvalifisert' }, '');
+    expect(p.kvalifisert).toBe('nei');
+    expect(p.brreg_treff).toBe('ja');
+  });
+});
+
+describe('postToZapier', () => {
+  it('lykkes på første forsøk, ingen retry', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }));
+    const ok = await postToZapier('https://hooks.zapier.com/x', { a: 1 }, 'lead-1', fetchImpl as unknown as typeof fetch);
+    expect(ok).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+  it('feiler første gang, lykkes andre: retry gjenoppretter', async () => {
+    let n = 0;
+    const fetchImpl = vi.fn(async () => (++n === 1 ? new Response(null, { status: 500 }) : new Response(null, { status: 200 })));
+    const ok = await postToZapier('https://hooks.zapier.com/x', { a: 1 }, 'lead-1', fetchImpl as unknown as typeof fetch);
+    expect(ok).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+  it('feiler begge forsøk: gir false, kaster aldri', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 500 }));
+    const ok = await postToZapier('https://hooks.zapier.com/x', { a: 1 }, 'lead-1', fetchImpl as unknown as typeof fetch);
+    expect(ok).toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+  it('nettverksfeil (kastet unntak) teller som mislykket forsøk, kaster ikke videre', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('network down');
+    });
+    const ok = await postToZapier('https://hooks.zapier.com/x', { a: 1 }, 'lead-1', fetchImpl as unknown as typeof fetch);
+    expect(ok).toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

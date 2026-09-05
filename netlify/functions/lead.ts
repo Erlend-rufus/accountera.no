@@ -7,7 +7,7 @@ import { createTask, ensureTags } from '../lib/clickup';
 import { isDuplicate } from '../lib/dedupe';
 import { postToZapier } from '../lib/zapier';
 import { sendLeadToMeta } from '../lib/meta';
-import { buildDescription, buildTags, priorityFor, taskName } from '../lib/describe';
+import { buildDescription, buildSheetPayload, buildTags, priorityFor, taskName } from '../lib/describe';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -45,7 +45,9 @@ export default async function handler(req: Request, context: Context): Promise<R
   const brregResult = await lookupCompany(lead.company);
   if (brregResult.error) log('warn', 'brreg.failed', { leadId, error: brregResult.error });
 
-  // 5. ClickUp-task. Duplikat: opprett likevel, men tagg.
+  // 5. ClickUp-task. Ikke lenger lead-registeret (avgjørelse 5. september 2026, Google Sheet via
+  // Zapier er det), bare et sekundært arbeidsverktøy. Skal aldri kunne stoppe en innsending, og
+  // feil her er ikke kritisk: logges på «warn», ikke «error». Duplikat: opprett likevel, men tagg.
   const duplicate = await isDuplicate(lead.tel, now);
   const facts = { lead, meta, outcome, brreg: brregResult.match, leadId, duplicate, submittedAt: now };
   const tags = buildTags(facts);
@@ -65,46 +67,25 @@ export default async function handler(req: Request, context: Context): Promise<R
       steps.clickup = true;
     } catch (e) {
       steps.clickup = false;
-      log('error', 'lead.clickup_failed', { leadId, error: e instanceof Error ? e.message : String(e) });
+      log('warn', 'lead.clickup_failed', { leadId, error: e instanceof Error ? e.message : String(e) });
     }
   } else {
     steps.clickup = false;
-    log('error', 'lead.clickup_token_missing', { leadId });
+    log('warn', 'lead.clickup_token_missing', { leadId });
   }
 
-  // 6. Zapier: varsling og e-postsekvens. Sekundært; feil stopper ikke svaret.
+  // 6. Zapier → Google Sheet. Dette ER lead-registeret nå, og dermed kritisk: mister vi denne
+  // raden, mister vi henvendelsen. Prøver på nytt ved feil (se postToZapier), og total feil
+  // logges høyt uansett om ClickUp-tasken over lyktes eller ikke.
   const zapierUrl = process.env.ZAPIER_HOOK_URL;
+  const sheetPayload = buildSheetPayload(facts, task?.url ?? '');
   if (zapierUrl) {
-    steps.zapier = await postToZapier(zapierUrl, {
-      leadId,
-      name: lead.name,
-      company: lead.company,
-      tel: toE164(lead.tel),
-      email: lead.email,
-      regnskapsforer: lead.regnskapsforer,
-      program: lead.program,
-      bransje: lead.bransje,
-      msg: lead.msg,
-      v: meta.v,
-      utm_source: meta.utm_source,
-      utm_medium: meta.utm_medium,
-      utm_campaign: meta.utm_campaign,
-      utm_content: meta.utm_content,
-      fbclid: meta.fbclid,
-      taskId: task?.id ?? null,
-      taskUrl: task?.url ?? null,
-      utfall: outcome,
-      verifisert: brregResult.match.status === 'verifisert',
-      orgnr: brregResult.match.status === 'verifisert' ? brregResult.match.enhet.organisasjonsnummer : null,
-      duplikat: duplicate,
-      tags,
-      submittedAt: new Date(now).toISOString(),
-    });
-    if (!task && !steps.zapier) log('error', 'lead.lost_no_task_no_zapier', { leadId });
+    steps.zapier = await postToZapier(zapierUrl, sheetPayload, leadId);
   } else {
     steps.zapier = false;
-    if (!task) log('error', 'lead.lost_no_task_no_zapier', { leadId });
+    log('error', 'lead.zapier_hook_missing', { leadId });
   }
+  if (!steps.zapier) log('error', 'lead.row_not_written', { leadId });
 
   // 7. Meta Conversions API, bare med samtykke. Samme event_id som pixelen.
   const pixelId = process.env.META_PIXEL_ID;

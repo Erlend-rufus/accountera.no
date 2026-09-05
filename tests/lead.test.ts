@@ -106,12 +106,14 @@ describe('/api/lead', () => {
 
     const zap = calls.find((c) => c.url.startsWith('https://hooks.zapier.com/'));
     const zapBody = JSON.parse(String(zap!.init!.body)) as Record<string, unknown>;
-    expect(zapBody.taskId).toBe('task1');
-    expect(zapBody.utfall).toBe('kvalifisert');
-    expect(zapBody.verifisert).toBe(true);
-    expect(zapBody.tel).toBe('+4740156666');
-    expect(zapBody.leadId).toBe(body.leadId);
-    expect(zapBody.regnskapsforer).toBe('Ja, jeg bruker et regnskapsbyrå');
+    expect(zapBody.clickup_url).toBe('https://app.clickup.com/t/task1');
+    expect(zapBody.kvalifisert).toBe('ja');
+    expect(zapBody.brreg_treff).toBe('ja');
+    expect(zapBody.orgnr).toBe('926445936');
+    expect(zapBody.telefon).toBe('+4740156666');
+    expect(zapBody.vinkel).toBe('a');
+    expect(zapBody.har_regnskapsforer).toBe('Ja, jeg bruker et regnskapsbyrå');
+    expect(zapBody.leadId).toBeUndefined();
 
     const capi = calls.find((c) => c.url.startsWith('https://graph.facebook.com/'));
     expect(capi).toBeDefined();
@@ -168,7 +170,7 @@ describe('/api/lead', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('ClickUp nede: prøver to ganger, Zapier får leadet med taskId null, leseren får suksess', async () => {
+  it('ClickUp nede: ikke lenger kritisk, prøver to ganger, raden skrives til arket uten clickup_url, ingen feillogging på høyt nivå', async () => {
     vi.stubGlobal(
       'fetch',
       mockFetch({ ...baseRoutes, 'https://api.clickup.com/api/v2/list/': () => new Response('down', { status: 503 }) }),
@@ -179,8 +181,26 @@ describe('/api/lead', () => {
     expect(body.taskId).toBeNull();
     expect(calls.filter((c) => c.url.includes('/list/901525768674/task'))).toHaveLength(2);
     const zap = calls.find((c) => c.url.startsWith('https://hooks.zapier.com/'));
-    expect(JSON.parse(String(zap!.init!.body)).taskId).toBeNull();
+    expect(JSON.parse(String(zap!.init!.body)).clickup_url).toBe('');
+    expect(console.warn).toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('Zapier nede etter to forsøk: leseren får likevel suksess, men den tapte raden logges høyt', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({ ...baseRoutes, 'https://hooks.zapier.com/': () => new Response('down', { status: 500 }) }),
+    );
+    const res = await post(validBody);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { leadId: string; utfall: string };
+    expect(body.utfall).toBe('kvalifisert');
+    expect(calls.filter((c) => c.url.startsWith('https://hooks.zapier.com/'))).toHaveLength(2);
     expect(console.error).toHaveBeenCalled();
+    const logged = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toContain('zapier.failed');
+    expect(logged).toContain('lead.row_not_written');
+    expect(logged).toContain(body.leadId);
   });
 
   it('Enhetsregisteret nede eller tregt: innsendingen går likevel, tagg ikke-verifisert', async () => {
