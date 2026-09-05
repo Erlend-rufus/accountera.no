@@ -98,11 +98,32 @@ Alle ruter er `noindex` (meta og `X-Robots-Tag`), `robots.txt` avviser alt.
 
 ## Funksjonen `/api/lead`
 
-Rekkefølgen er briefens punkt 6: stille spamavvisning (honningfelle eller under tre sekunder etter `t0`), validering med samme regler og tekster som i nettleseren, utfall fra bransje, oppslag i Enhetsregisteret (3 s tidsavbrudd, blokkerer aldri), ClickUp-task med tagger `vinkel-a|b|c` og `kvalifisert|diskvalifisert|ikke-verifisert` (pluss `duplikat` ved samme telefonnummer siste 24 timer, og `har-byraa|foerer-selv|tidligere-byraa` fra det nye feltet «Har du regnskapsfører i dag?»), Zapier Catch Hook, Meta CAPI ved samtykke, svar `{ leadId, taskId, utfall }`. Feiler ClickUp to ganger, får Zapier leadet med `taskId: null`, leseren får suksess, og loggen skriver `lead.clickup_failed` og `lead.lost_no_task_no_zapier` hvis også Zapier mangler.
+Rekkefølgen er briefens punkt 6: stille spamavvisning (honningfelle eller under tre sekunder etter `t0`), validering med samme regler og tekster som i nettleseren, utfall fra bransje, oppslag i Enhetsregisteret (3 s tidsavbrudd, blokkerer aldri), ClickUp-task, Zapier → Google Sheet, Meta CAPI ved samtykke, svar `{ leadId, taskId, utfall }`.
 
-«Har du regnskapsfører i dag?» (tillegg til byggebrief 08, 5. september 2026) måler bare sammensetningen av henvendelser. Den påvirker aldri `utfall`/kvalifisering, som fortsatt bare bygger på bransje (`decideOutcome` i `src/shared/validate.ts`).
+**Lead-registeret er et Google Sheet, ikke ClickUp** (avgjørelse 5. september 2026 — Marius valgte Sheet i oppstartsworkshopen, prosjektteksten som sa ClickUp var feil). Det endrer kritikaliteten på de to eksterne kallene:
+
+- **ClickUp er sekundært.** Et arbeidsverktøy, ikke registeret. Task med tagger `vinkel-a|b|c` og `kvalifisert|diskvalifisert|ikke-verifisert` (pluss `duplikat` og `har-byraa|foerer-selv|tidligere-byraa`). Prøves to ganger (`netlify/lib/clickup.ts`), men feiler det likevel, eller mangler `CLICKUP_TOKEN`, stopper det aldri innsendingen. Logges på `warn`-nivå (`lead.clickup_failed`, `lead.clickup_token_missing`), ikke `error`.
+- **Zapier → Sheet er kritisk.** Feiler det permanent, mister vi henvendelsen. `postToZapier` (`netlify/lib/zapier.ts`) prøver derfor på nytt én gang. Lykkes ingen av forsøkene, logges det på `error`-nivå (`zapier.failed`, `lead.row_not_written`) med `leadId`, aldri med selve nyttelasten (som har navn, telefon, e-post). Leseren får uansett `200`; innsendingen skal aldri «ryke» på et eksternt kall.
+
+**Nyttelasten til Zapier er en kontrakt** (tillegg til byggebrief 08, 5. september 2026), bygget av `buildSheetPayload` i `netlify/lib/describe.ts`. Nøyaktig disse nøklene, ingen flere, ingen færre:
+
+| Nøkkel | Kilde |
+|---|---|
+| `timestamp` | ISO 8601, tidspunkt for innsending |
+| `navn`, `firma`, `telefon`, `epost`, `melding` | skjemaet, `telefon` som E.164 (`+47…`) |
+| `har_regnskapsforer`, `regnskapsprogram`, `bransje` | skjemaet, rå valgtekst |
+| `vinkel` | varianten som faktisk ble vist (`a`/`b`/`c`), ikke nødvendigvis den som ble bedt om i URL-en |
+| `utm_source`, `utm_campaign`, `utm_content` | annonseparametere |
+| `orgnr` | fra Enhetsregisteret, tom streng uten verifisert treff |
+| `brreg_treff` | `ja`/`nei` — fikk vi et verifisert treff i det hele tatt |
+| `kvalifisert` | `ja`/`nei`/`ikke verifisert` — `nei` ved diskvalifiserende bransje, ellers `ja` med verifisert treff, ellers `ikke verifisert` |
+| `clickup_url` | tom streng hvis ClickUp ikke ble brukt |
+
+«Har du regnskapsfører i dag?» måler bare sammensetningen av henvendelser. Den påvirker aldri `utfall`/`kvalifisert`, som fortsatt bare bygger på bransje og Enhetsregisteret (`decideOutcome` i `src/shared/validate.ts`, `buildSheetPayload` i `netlify/lib/describe.ts`).
 
 Loggen inneholder `leadId`, utfall og hvilke steg som lyktes. Aldri navn, telefon eller e-post.
+
+**Miljøvariabler leses ved deploy, ikke ved hvert kall.** En variabel satt eller endret i Netlifys grensesnitt gjelder først etter neste bygg (samme mekanisme som gjør at `VITE_`-variabler krever nytt bygg for å slå inn). Legg til eller endre en variabel, og trigg et nytt bygg (`Deploys` → `Trigger deploy` → `Deploy site`) hvis ingen kodeendring følger med.
 
 Taggene opprettes i spacet ved første kjøring hvis de mangler.
 

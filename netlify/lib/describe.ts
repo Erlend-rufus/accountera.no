@@ -37,6 +37,37 @@ export function priorityFor(outcome: Outcome): number {
   return outcome === 'diskvalifisert' ? 4 : 1;
 }
 
+/**
+ * Nyttelasten til Zapier Catch Hook → Google Sheet, lead-registeret siden 5. september 2026
+ * (avgjørelse: Marius valgte Sheet i oppstartsworkshopen, ikke ClickUp). Nøkkelnavnene er en
+ * kontrakt mot Zapen, satt av tillegget til byggebrief 08 samme dato: skal sendes eksakt slik,
+ * ellers blir kolonner tomme i arket uten at noen får en feilmelding. `clickupUrl` er tom streng
+ * når ClickUp ikke ble brukt (manglende token, eller kallet feilet), aldri null.
+ */
+export function buildSheetPayload(f: TaskFacts, clickupUrl: string): Record<string, string> {
+  const brreg = f.brreg;
+  const orgnr = brreg.status === 'verifisert' ? brreg.enhet.organisasjonsnummer : '';
+  return {
+    timestamp: new Date(f.submittedAt).toISOString(),
+    navn: f.lead.name,
+    firma: f.lead.company,
+    telefon: toE164(f.lead.tel),
+    epost: f.lead.email,
+    har_regnskapsforer: f.lead.regnskapsforer,
+    regnskapsprogram: f.lead.program,
+    bransje: f.lead.bransje,
+    melding: f.lead.msg,
+    vinkel: f.meta.v,
+    utm_source: f.meta.utm_source,
+    utm_campaign: f.meta.utm_campaign,
+    utm_content: f.meta.utm_content,
+    orgnr,
+    brreg_treff: brreg.status === 'verifisert' ? 'ja' : 'nei',
+    kvalifisert: f.outcome === 'diskvalifisert' ? 'nei' : brreg.status === 'verifisert' ? 'ja' : 'ikke verifisert',
+    clickup_url: clickupUrl,
+  };
+}
+
 export function formatOsloTime(ms: number): string {
   return new Intl.DateTimeFormat('nb-NO', {
     day: '2-digit',
