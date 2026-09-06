@@ -89,12 +89,33 @@
 .how__band { position: relative; height: 88px; overflow: hidden; }
 .how__band .ds-pattern { inset: 0; }
 .how__grid { display: grid; gap: 2rem; }
-.how__step { border-top: 1px solid var(--acc-cream-a30); padding-top: 1.25rem; display: grid; gap: 0.5rem; }
+.how__step { border-top: 1px solid var(--acc-cream-a30); padding-top: 1.25rem; display: grid; gap: 0.5rem; position: relative; }
 .how__step .ds-display-num { margin-bottom: 0.25rem; }
 .how__step .ds-h3 { color: var(--acc-cream); }
 .how__step p { color: var(--acc-cream-a72); }
 @media (min-width: 960px) {
-  .how__grid { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+  .how__grid { grid-template-columns: repeat(3, 1fr); gap: 2rem; position: relative; }
+  /* Forbindelseslinje mellom trinnene, med en prikk per trinn. */
+  .how__grid::before {
+    content: '';
+    position: absolute;
+    top: 0.85rem;
+    left: calc(100% / 6);
+    right: calc(100% / 6);
+    height: 1px;
+    background: var(--acc-cream-a30);
+  }
+  .how__step { border-top: none; padding-top: 2.25rem; }
+  .how__step::before {
+    content: '';
+    position: absolute;
+    top: 0.6rem;
+    left: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--acc-cream);
+  }
 }
 
 /* Team */
@@ -110,13 +131,24 @@
 .proof__logo { color: var(--acc-primary); margin-top: 0.5rem; }
 .proof__facts { list-style: none; margin: 0; padding: 0; }
 .proof__facts li {
-  padding: 0.875rem 0;
-  border-top: 1px solid var(--acc-line-soft);
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--acc-primary-a10);
   font-size: var(--acc-fs-body);
   color: var(--acc-primary);
 }
-.proof__facts li:last-child { border-bottom: 1px solid var(--acc-line-soft); }
-.quote { border-left: 2px solid var(--acc-primary); padding-left: 1rem; display: grid; gap: 0.5rem; }
+.proof__facts li:last-child { border-bottom: 1px solid var(--acc-primary-a10); }
+.quote { position: relative; border-left: 2px solid var(--acc-primary); padding-left: 1.5rem; display: grid; gap: 0.5rem; }
+.quote::before {
+  content: '”';
+  position: absolute;
+  left: 0.15rem;
+  top: -0.9rem;
+  font-size: 3.5rem;
+  line-height: 1;
+  font-weight: var(--acc-w-medium);
+  color: var(--acc-primary);
+  opacity: 0.28;
+}
 .quote blockquote { margin: 0; font-size: 1.25rem; line-height: 1.45; color: var(--acc-primary); }
 .form-panel {
   border: 1px solid var(--acc-line);
