@@ -31,11 +31,6 @@
   to = "/personvern.html"
   status = 200
 
-[[redirects]]
-  from = "/forhandsvisning"
-  to = "/forhandsvisning.html"
-  status = 200
-
 [[headers]]
   for = "/*"
   [headers.values]

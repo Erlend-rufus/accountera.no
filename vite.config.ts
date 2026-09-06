@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { marked } from 'marked';
 
-const pages = ['index', 'takk', 'takker-nei', 'personvern', 'forhandsvisning'] as const;
+const pages = ['index', 'takk', 'takker-nei', 'personvern'] as const;
 const root = import.meta.dirname ?? dirname(fileURLToPath(import.meta.url));
 
 /** I `vite dev` (uten Netlify) svarer /takk osv. med riktig HTML-fil, slik netlify.toml gjør i produksjon. */
