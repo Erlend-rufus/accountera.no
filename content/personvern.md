@@ -24,8 +24,8 @@ Hvis du velger «Godta» i samtykkelinjen nederst på siden, bruker vi i tillegg
 |---|---|---|
 | Elevate Marketing (EngeCo AS) | Drifter siden og følger opp henvendelser sammen med Accountera | Norge |
 | Netlify | Drifter nettsiden og tjenesten som tar imot skjemaet | EU/USA |
-| ClickUp | Register over henvendelser | USA |
-| Zapier | Sender varsel og e-post om henvendelsen | USA |
+| Google (Google Workspace) | Register over henvendelser i et delt regneark | EU/USA |
+| Zapier | Overfører henvendelsen til regnearket og sender varsel | USA |
 | Calendly | Booking av samtalen på takkesiden | USA |
 | Meta Platforms | Måling av annonser, bare hvis du har valgt «Godta» | EU/USA |
 
