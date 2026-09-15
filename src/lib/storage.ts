@@ -8,7 +8,19 @@ const KEY_LEAD = 'acc_lead';
 const KEY_LEAD_PENDING = 'acc_lead_pending';
 
 export type Utm = { utm_source: string; utm_medium: string; utm_campaign: string; utm_content: string; fbclid: string };
-export type StoredLead = { leadId: string; name: string; firstName: string; email: string; tel: string; taskId: string | null; utfall: string };
+export type StoredLead = {
+  leadId: string;
+  name: string;
+  firstName: string;
+  email: string;
+  tel: string;
+  taskId: string | null;
+  utfall: string;
+  /** Hero-varianten som var vist ved innsending. Til Meta-hendelsenes `vinkel`-parameter. */
+  v: 'a' | 'b' | 'c';
+  /** Samme tre-verdis status som Sheet-kolonnen «kvalifisert». Til Lead-hendelsens `kvalifisert`-parameter. */
+  kvalifisert: 'ja' | 'nei' | 'ikke verifisert';
+};
 
 function get(key: string): string | null {
   try {

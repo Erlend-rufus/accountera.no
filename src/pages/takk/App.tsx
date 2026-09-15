@@ -4,8 +4,8 @@ import { Page } from '../../components/Page';
 import { ConsentBar } from '../../components/ConsentBar';
 import { site, takk } from '../../content/site';
 import { config } from '../../lib/config';
-import { consumeLeadPending, getStoredLead } from '../../lib/storage';
-import { bindPixelToConsent, track } from '../../lib/pixel';
+import { consumeLeadPending, getStoredLead, getStoredVariant } from '../../lib/storage';
+import { bindPixelToConsent, loadPixel, track } from '../../lib/pixel';
 import { formatWhen } from '../../lib/format';
 
 declare global {
@@ -23,7 +23,6 @@ declare global {
 
 const CALENDLY_SCRIPT = 'https://assets.calendly.com/assets/external/widget.js';
 const CALENDLY_ORIGIN = 'https://calendly.com';
-const LOAD_TIMEOUT_MS = 5000;
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -57,29 +56,27 @@ export function App() {
   const [state, setState] = useState<State>(() => (config.calendlyUrl ? 'loading' : 'failed'));
   const [when, setWhen] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
-  const leadPending = useRef<boolean>(false);
 
-  // Lead-hendelsen: bare med gyldig leadId, bare én gang, bare med samtykke. Flagget slettes uansett.
+  // Lead-hendelsen: bare med gyldig leadId fra en nettopp fullført innsending, bare én gang
+  // (flagget slettes uansett). Samtykke sjekkes akkurat nå, ved sideinnlasting, ikke løpende:
+  // gir brukeren samtykke først etter at skjemaet er sendt, er hendelsen tapt, og det er riktig
+  // (arbeidsordre 15. september 2026, punkt 4). Generell pixel-lasting (PageView) reagerer
+  // fortsatt på samtykke som kommer senere på denne siden, se bindPixelToConsent() under.
   useEffect(() => {
-    leadPending.current = !!lead && consumeLeadPending();
-    const unbind = bindPixelToConsent(() => {
-      if (leadPending.current && lead) {
-        track('Lead', {}, { eventID: lead.leadId });
-        leadPending.current = false;
-      }
-    });
-    return unbind;
+    const pending = !!lead && consumeLeadPending();
+    if (pending && lead && loadPixel()) {
+      track('Lead', { content_name: 'skjema', vinkel: lead.v, kvalifisert: lead.kvalifisert }, { eventID: lead.leadId });
+    }
+    return bindPixelToConsent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Calendly inline. Laster den ikke innen fem sekunder: telefon-fallback. Leadet er allerede lagret.
+  // Calendly inline. Ingen timeout: en treg 4G-forbindelse skal ikke koste brukeren bookingen.
+  // Skriptet feiler å laste, eller widgeten kaster: da vises telefon-fallback (se catch under).
   useEffect(() => {
     if (!config.calendlyUrl) return;
     let loaded = false;
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      if (!loaded) setState('failed');
-    }, LOAD_TIMEOUT_MS);
 
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== CALENDLY_ORIGIN) return;
@@ -88,7 +85,6 @@ export function App() {
       if (typeof ev !== 'string' || !ev.startsWith('calendly.')) return;
       if (!loaded) {
         loaded = true;
-        window.clearTimeout(timer);
         setState((s) => (s === 'loading' ? 'ready' : s));
       }
       if (ev === 'calendly.event_scheduled') {
@@ -96,7 +92,7 @@ export function App() {
         const start = p?.event?.start_time ?? p?.scheduled_event?.start_time;
         setWhen(start ? formatWhen(start) : null);
         setState('confirmed');
-        track('Schedule');
+        track('Schedule', { content_name: 'booking', vinkel: getStoredVariant() ?? lead?.v ?? '' });
       }
     };
     window.addEventListener('message', onMessage);
@@ -127,7 +123,6 @@ export function App() {
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
       window.removeEventListener('message', onMessage);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

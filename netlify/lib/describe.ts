@@ -38,6 +38,15 @@ export function priorityFor(outcome: Outcome): number {
 }
 
 /**
+ * Tre-verdis kvalifiseringsstatus brukt både i Sheet-raden (kolonnen «kvalifisert») og i
+ * svaret fra /api/lead (samme navn, samme verdier), som igjen bærer den videre til
+ * Lead-hendelsens `kvalifisert`-parameter mot Meta. Én kilde til denne avledningen.
+ */
+export function kvalifisertFor(outcome: Outcome, brreg: BrregMatch): 'ja' | 'nei' | 'ikke verifisert' {
+  return outcome === 'diskvalifisert' ? 'nei' : brreg.status === 'verifisert' ? 'ja' : 'ikke verifisert';
+}
+
+/**
  * Nyttelasten til Zapier Catch Hook → Google Sheet, lead-registeret siden 5. september 2026
  * (avgjørelse: Marius valgte Sheet i oppstartsworkshopen, ikke ClickUp). Nøkkelnavnene er en
  * kontrakt mot Zapen, satt av tillegget til byggebrief 08 samme dato: skal sendes eksakt slik,
@@ -63,7 +72,7 @@ export function buildSheetPayload(f: TaskFacts, clickupUrl: string): Record<stri
     utm_content: f.meta.utm_content,
     orgnr,
     brreg_treff: brreg.status === 'verifisert' ? 'ja' : 'nei',
-    kvalifisert: f.outcome === 'diskvalifisert' ? 'nei' : brreg.status === 'verifisert' ? 'ja' : 'ikke verifisert',
+    kvalifisert: kvalifisertFor(f.outcome, brreg),
     clickup_url: clickupUrl,
   };
 }
