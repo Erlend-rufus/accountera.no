@@ -10,7 +10,7 @@ import { firstName } from '../../lib/format';
 type Values = Record<LeadFieldName, string>;
 const initial: Values = { name: '', company: '', tel: '', email: '', regnskapsforer: '', program: '', bransje: '', msg: '' };
 
-type LeadResponse = { leadId: string; taskId: string | null; utfall: 'kvalifisert' | 'diskvalifisert' };
+type LeadResponse = { leadId: string; taskId: string | null; utfall: 'kvalifisert' | 'diskvalifisert'; kvalifisert: 'ja' | 'nei' | 'ikke verifisert' };
 
 export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
   const [values, setValues] = useState<Values>(initial);
@@ -92,6 +92,8 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
         tel: toE164(result.data.tel),
         taskId: body.taskId ?? null,
         utfall: body.utfall,
+        v: variant,
+        kvalifisert: body.kvalifisert,
       });
       setAnnounce('Meldingen er sendt.');
       window.location.assign(body.utfall === 'diskvalifisert' ? '/takker-nei' : '/takk');

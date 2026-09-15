@@ -7,7 +7,7 @@ import { createTask, ensureTags } from '../lib/clickup';
 import { isDuplicate } from '../lib/dedupe';
 import { postToZapier } from '../lib/zapier';
 import { sendLeadToMeta } from '../lib/meta';
-import { buildDescription, buildSheetPayload, buildTags, priorityFor, taskName } from '../lib/describe';
+import { buildDescription, buildSheetPayload, buildTags, kvalifisertFor, priorityFor, taskName } from '../lib/describe';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -29,7 +29,7 @@ export default async function handler(req: Request, context: Context): Promise<R
   // 1. Spam avvises stille. Spammere skal ikke få vite at de ble avvist.
   if (isSpam(input, now)) {
     log('info', 'lead.spam', { leadId });
-    return json({ leadId, taskId: null, utfall: 'kvalifisert' });
+    return json({ leadId, taskId: null, utfall: 'kvalifisert', kvalifisert: 'ja' });
   }
 
   // 2. Validering med samme regler og tekster som i nettleseren.
@@ -114,7 +114,7 @@ export default async function handler(req: Request, context: Context): Promise<R
 
   // 8. Svar. Loggen: leadId, utfall og steg. Aldri persondata.
   log('info', 'lead.done', { leadId, utfall: outcome, verifisert: brregResult.match.status, duplikat: duplicate, taskId: task?.id ?? null, steps });
-  return json({ leadId, taskId: task?.id ?? null, utfall: outcome });
+  return json({ leadId, taskId: task?.id ?? null, utfall: outcome, kvalifisert: kvalifisertFor(outcome, brregResult.match) });
 }
 
 export const config: Config = { path: '/api/lead' };

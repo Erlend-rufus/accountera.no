@@ -90,9 +90,10 @@ describe('/api/lead', () => {
     vi.stubGlobal('fetch', mockFetch(baseRoutes));
     const res = await post(validBody);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { leadId: string; taskId: string; utfall: string };
+    const body = (await res.json()) as { leadId: string; taskId: string; utfall: string; kvalifisert: string };
     expect(body.taskId).toBe('task1');
     expect(body.utfall).toBe('kvalifisert');
+    expect(body.kvalifisert).toBe('ja');
     expect(body.leadId).toMatch(/^[0-9a-f-]{36}$/);
 
     const clickup = calls.find((c) => c.url.includes('/list/901525768674/task'));
@@ -124,19 +125,21 @@ describe('/api/lead', () => {
     expect(JSON.stringify(capiBody)).not.toContain('kari@example.com');
   });
 
-  it('uten samtykke sendes ingenting til Meta, men tasken opprettes', async () => {
+  it('uten samtykke sendes ingenting til Meta, men raden i arket og ClickUp-tasken opprettes likevel', async () => {
     vi.stubGlobal('fetch', mockFetch(baseRoutes));
     const res = await post({ ...validBody, consent: 'necessary' });
     expect(res.status).toBe(200);
     expect(calls.some((c) => c.url.startsWith('https://graph.facebook.com/'))).toBe(false);
     expect(calls.some((c) => c.url.includes('/list/901525768674/task'))).toBe(true);
+    expect(calls.some((c) => c.url.startsWith('https://hooks.zapier.com/'))).toBe(true);
   });
 
   it('diskvalifisert bransje: lav prioritet, diskvalifisert-tagg, utfall i svaret', async () => {
     vi.stubGlobal('fetch', mockFetch(baseRoutes));
     const res = await post({ ...validBody, bransje: 'Landbruk og skogbruk' });
-    const body = (await res.json()) as { utfall: string };
+    const body = (await res.json()) as { utfall: string; kvalifisert: string };
     expect(body.utfall).toBe('diskvalifisert');
+    expect(body.kvalifisert).toBe('nei');
     const clickup = calls.find((c) => c.url.includes('/list/901525768674/task'));
     const task = JSON.parse(String(clickup!.init!.body)) as { tags: string[]; priority: number };
     expect(task.tags).toEqual(['vinkel-a', 'diskvalifisert', 'har-byraa']);
@@ -147,9 +150,10 @@ describe('/api/lead', () => {
     vi.stubGlobal('fetch', mockFetch(baseRoutes));
     const res = await post({ ...validBody, website: 'http://spam' });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { leadId: string; taskId: null };
+    const body = (await res.json()) as { leadId: string; taskId: null; kvalifisert: string };
     expect(body.leadId).toBeTruthy();
     expect(body.taskId).toBeNull();
+    expect(body.kvalifisert).toBe('ja');
     expect(calls).toHaveLength(0);
   });
 
@@ -215,6 +219,8 @@ describe('/api/lead', () => {
     );
     const res = await post(validBody);
     expect(res.status).toBe(200);
+    const body = (await res.json()) as { kvalifisert: string };
+    expect(body.kvalifisert).toBe('ikke verifisert');
     const clickup = calls.find((c) => c.url.includes('/list/901525768674/task'));
     const task = JSON.parse(String(clickup!.init!.body)) as { tags: string[]; markdown_description: string };
     expect(task.tags).toEqual(['vinkel-a', 'ikke-verifisert', 'har-byraa']);

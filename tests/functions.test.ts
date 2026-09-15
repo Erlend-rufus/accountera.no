@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildDescription, buildSheetPayload, buildTags, priorityFor, taskName, type TaskFacts } from '../netlify/lib/describe';
+import { buildDescription, buildSheetPayload, buildTags, kvalifisertFor, priorityFor, taskName, type TaskFacts } from '../netlify/lib/describe';
 import { buildLeadEvent, fbcFromClid, hashEmail, hashPhone } from '../netlify/lib/meta';
 import { lookupCompany } from '../netlify/lib/brreg';
 import { pageKeyFrom, osloDate } from '../netlify/lib/counters';
@@ -184,6 +184,19 @@ describe('buildSheetPayload (nyttelast mot Zapier → Google Sheet)', () => {
     const p = buildSheetPayload({ ...base, outcome: 'diskvalifisert' }, '');
     expect(p.kvalifisert).toBe('nei');
     expect(p.brreg_treff).toBe('ja');
+  });
+});
+
+describe('kvalifisertFor (samme avledning som Sheet-kolonnen, gjenbrukt i /api/lead-svaret)', () => {
+  it('diskvalifisert bransje: nei, uansett Enhetsregisteret', () => {
+    expect(kvalifisertFor('diskvalifisert', base.brreg)).toBe('nei');
+    expect(kvalifisertFor('diskvalifisert', { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' })).toBe('nei');
+  });
+  it('kvalifisert og verifisert: ja', () => {
+    expect(kvalifisertFor('kvalifisert', base.brreg)).toBe('ja');
+  });
+  it('kvalifisert men ikke verifisert: ikke verifisert', () => {
+    expect(kvalifisertFor('kvalifisert', { status: 'ikke-verifisert', kandidater: [], grunn: 'flere' })).toBe('ikke verifisert');
   });
 });
 
