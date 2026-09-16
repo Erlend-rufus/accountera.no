@@ -1,2 +1,5 @@
 User-agent: *
 Disallow: /
+# /tmp-annonser/ er allerede dekket av Disallow: / over. Eksplisitt linje likevel, per
+# arbeidsordre 16. september 2026 - midlertidige annonsefiler til Meta, fjernes igjen.
+Disallow: /tmp-annonser/
