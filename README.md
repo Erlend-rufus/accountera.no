@@ -136,3 +136,11 @@ Taggene opprettes i spacet ved første kjøring hvis de mangler.
 Briefens punkt 15 og 16. `node tests/e2e.cjs` tar skjermbilder av alle ruter og varianter ved 390 og 1440 (`tests/__screenshots__/`) og måler i DOM: bare de tre fargene, brødtekst ≥ 18 px ved 390, Thin ≥ 40 px, sticky CTA skjult ved hero-knapp og skjema, Calendly-høyde, ingen eksterne kall før samtykke, feilfokus. Avvik skrives til `tests/__screenshots__/problems.txt`.
 
 Det som ikke kan testes her og må gjøres før lansering: ekte innsending mot ClickUp og Zapier, Metas Test Events med pixel og CAPI deduplisert på samme `event_id`, Calendly-booking, Facebook-appen på iOS og Android, Lighthouse.
+
+## Kjent, ikke-blokkerende: Calendly-timeoutens robusthet
+
+Notert 5. september 2026, ikke en lanseringsblokker, tas opp igjen etter at kampanjen er i gang.
+
+`src/pages/takk/App.tsx` (linje 24–134) gir Calendly fem sekunder (`LOAD_TIMEOUT_MS`) fra scriptet er lastet til det må ha kommet en `postMessage` fra `calendly.com`, ellers går siden permanent over til telefon-fallback for resten av økten — ingen vei tilbake til lasting selv om Calendly svarer et øyeblikk senere (leadet er uansett allerede lagret). Fem sekunder er eksplisitt spesifisert i byggebrief 08 punkt 7, så dette er en bevisst grense, ikke en bug, men den kan bare tape: laster widgeten sakte i stedet for aldri, mister brukeren en fungerende kalender for en unødvendig telefon-fallback.
+
+Avgjørende test før dette prioriteres: fyll ut skjemaet på mobil over 4G — gjerne i Facebooks innebygde nettleser, der annonsetrafikken faktisk kommer fra — og se om Calendly konsekvent laster innen fem sekunder i praksis. Klarer den seg der, er dette bare en note. Feiler den ofte for ekte mobilbrukere, bør timeouten heves og/eller gjøres om til et nytt forsøk i stedet for en permanent fallback, uten å røre selve `.cal`/`.cal__widget`-rendringen (rettet i PR #3). En endring av femsekundersgrensen er da et bevisst spec-avvik og bør nevnes til Marius/Erlend, som andre avvik i dette prosjektet.
