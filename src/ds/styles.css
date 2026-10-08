@@ -149,10 +149,12 @@ img, svg { display: block; max-width: 100%; }
 .ds-on-navy .ds-btn--secondary { color: var(--acc-cream); border-color: var(--acc-cream); }
 .ds-on-navy .ds-btn--secondary:hover { background: var(--acc-cream-a15); }
 .ds-btn--full { display: flex; width: 100%; }
+.ds-btn--lg { min-height: 4rem; }
 .ds-btn__icon { width: 1.125em; height: 1.125em; flex: none; }
 @media (min-width: 960px) {
   .ds-btn { min-height: 3rem; padding: 0.625rem 1.5rem; font-size: 1rem; }
   .ds-btn--full { width: auto; display: inline-flex; }
+  .ds-btn--lg { min-height: 4rem; }
 }
 
 /* Skjemafelt */
@@ -219,6 +221,43 @@ textarea.ds-control { min-height: 7.5rem; resize: vertical; }
 .ds-select .ds-control { padding-right: 3rem; cursor: pointer; }
 .ds-select .ds-control:invalid,
 .ds-select .ds-control[data-empty='true'] { color: var(--acc-fg); }
+.ds-radio-group { border: none; margin: 0; padding: 0; }
+.ds-radio-group__options { display: flex; flex-direction: column; gap: 0.5rem; }
+.ds-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  font-size: 1.125rem;
+  color: var(--acc-fg);
+  cursor: pointer;
+}
+.ds-radio input[type='radio'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.ds-radio__dot {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid var(--acc-line);
+  border-radius: 50%;
+  position: relative;
+}
+.ds-radio__dot::after {
+  content: '';
+  position: absolute;
+  inset: 0.25rem;
+  border-radius: 50%;
+  background: var(--acc-primary);
+  transform: scale(0);
+  transition: transform 0.15s var(--acc-ease);
+}
+.ds-radio input:checked + .ds-radio__dot { border-color: var(--acc-primary); }
+.ds-radio input:checked + .ds-radio__dot::after { transform: scale(1); }
+.ds-radio input:focus-visible + .ds-radio__dot { outline: 2px solid var(--acc-primary); outline-offset: 2px; }
 .ds-select__chev {
   position: absolute;
   right: 1rem;
@@ -250,6 +289,7 @@ textarea.ds-control { min-height: 7.5rem; resize: vertical; }
   line-height: 1.45;
 }
 .ds-notice svg { flex: none; width: 1.25rem; height: 1.25rem; margin-top: 0.2rem; color: var(--acc-primary); }
+.ds-notice__title { font-weight: var(--acc-w-medium); margin: 0 0 0.25rem; }
 
 /* Kort */
 .ds-card {
@@ -298,14 +338,24 @@ textarea.ds-control { min-height: 7.5rem; resize: vertical; }
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 16px);
 }
 @media (min-width: 960px) {
+  /* Foto (eller navy+mønster) fyller HELE hero, fra topp til bunn og kant til kant - ingen
+     loddrett kant er mulig når det ikke er noen indre deling. Design-handoff «Ring meg opp»,
+     8. oktober 2026: forrige versjon hadde et 70%-bredt panel med en hard loddrett kant ved 30%;
+     det er fjernet. Teksten ligger over panelet (ds-diag--hero.ds-on-navy i Hero.tsx), beskyttet
+     av en navy-skrim nederst når det er et foto. */
   .ds-diag--hero { min-height: calc(70vw * var(--acc-diag-tan)); }
   .ds-diag--hero .ds-diag__panel {
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 70%;
-    height: calc(70vw * var(--acc-diag-tan));
-    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .ds-diag--hero .ds-diag__panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, var(--acc-scrim-navy-strong, rgba(20, 40, 56, 0.82)) 0%, rgba(20, 40, 56, 0) 55%);
+    pointer-events: none;
   }
 }
 /* Footer: navy flate med en «hette» over seg som skrår 36° opp mot høyre. */

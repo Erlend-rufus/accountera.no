@@ -5,6 +5,8 @@ type Common = {
   variant?: 'primary' | 'secondary';
   icon?: 'arrow-right' | 'arrow-left';
   full?: boolean;
+  /** `lg` = 64 px (skjemaets send-knapp). Standard = 56 px. */
+  size?: 'md' | 'lg';
   children: ReactNode;
   className?: string;
 };
@@ -13,8 +15,8 @@ type AsLink = Common & { href: string } & Omit<AnchorHTMLAttributes<HTMLAnchorEl
 
 /** Én primærknapp per skjerm. Lenke når `href` er satt, ellers `<button>`. */
 export function Button(props: AsButton | AsLink) {
-  const { variant = 'primary', icon, full, children, className, ...rest } = props;
-  const cls = ['ds-btn', `ds-btn--${variant}`, full ? 'ds-btn--full' : '', className].filter(Boolean).join(' ');
+  const { variant = 'primary', icon, full, size = 'md', children, className, ...rest } = props;
+  const cls = ['ds-btn', `ds-btn--${variant}`, full ? 'ds-btn--full' : '', size === 'lg' ? 'ds-btn--lg' : '', className].filter(Boolean).join(' ');
   const inner = (
     <>
       {icon === 'arrow-left' && <Icon name="arrow-left" className="ds-btn__icon" />}

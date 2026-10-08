@@ -14,18 +14,19 @@ export function Hero({ variant, ctaRef }: { variant: Variant; ctaRef: RefObject<
           <h1 id="hero-title" className="ds-h1-thin hero__title">
             {h.title.map((line, i) => (
               <Fragment key={i}>
-                {i > 0 && <br />}
+                {i > 0 && (variant === 'a' ? <br className="hero__break--desktop" /> : <br />)}
                 {line}
               </Fragment>
             ))}
           </h1>
           <p className="ds-lead hero__lead">{h.lead}</p>
-          <div className="hero__cta" ref={ctaRef}>
+          <div className="hero__cta" id={site.heroCtaId} ref={ctaRef}>
             <Button href={site.formAnchor} icon="arrow-right" full>
-              {site.bookLabel}
+              {site.ringLabel}
             </Button>
           </div>
           <p className="ds-small ds-muted hero__sub">{site.ctaSub}</p>
+          {config.weekendEveningBannerEnabled && <p className="ds-small ds-muted hero__sub">{site.weekendEveningNote}</p>}
         </div>
       </DiagonalSplit>
     </section>

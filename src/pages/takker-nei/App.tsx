@@ -3,7 +3,11 @@ import { Page } from '../../components/Page';
 import { ConsentBar } from '../../components/ConsentBar';
 import { site, takkerNei } from '../../content/site';
 
-/** Diskvalifisert bransje. Ingen Lead-hendelse, ingen Calendly, ingen pixel. */
+/**
+ * Siden finnes, men ingen sti fra skjemaet fører hit lenger: steg 1 samler ikke inn bransje, så
+ * det finnes ingen automatisk avvisning (design-handoff «Ring meg opp», 8. oktober 2026, AO-7).
+ * Bare nådd via direkte lenke, f.eks. fra manuell oppfølging.
+ */
 export function App() {
   return (
     <>

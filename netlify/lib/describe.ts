@@ -1,79 +1,76 @@
 import type { BrregMatch } from '../../src/shared/brreg';
-import type { LeadFields, LeadMeta, Outcome } from '../../src/shared/validate';
+import type { LeadMeta, Step1Fields } from '../../src/shared/validate';
 import { formatPhone, toE164 } from '../../src/shared/validate';
-import { REGNSKAPSFORER_TAGS } from '../../src/shared/form-content';
 
 export type TaskFacts = {
-  lead: LeadFields;
+  lead: Step1Fields;
   meta: LeadMeta;
-  outcome: Outcome;
   brreg: BrregMatch;
   leadId: string;
   duplicate: boolean;
   submittedAt: number;
 };
 
-export function taskName(lead: LeadFields): string {
+export function taskName(lead: Step1Fields): string {
   return `${lead.company} · ${lead.name}`;
 }
 
 /**
- * Tagger: vinkel-a|b|c, og kvalifisert, diskvalifisert eller ikke-verifisert. Pluss duplikat ved behov,
- * og en tagg for regnskapsfører i dag (har-byraa | foerer-selv | tidligere-byraa). Sistnevnte måler
- * bare sammensetning og påvirker aldri f.outcome (tillegg til byggebrief 08, 5. september 2026).
+ * Tagger: vinkel-a|b|c, og om firmaet ble verifisert i Enhetsregisteret. Pluss duplikat ved behov.
+ * Ingen diskvalifisering lenger (bransje samles ikke inn i steg 1, se design-handoff «Ring meg opp»,
+ * 8. oktober 2026, AO-7) - alle henvendelser er likeverdige her, Marius vurderer bransje i samtalen.
  */
-export function buildTags(f: Pick<TaskFacts, 'meta' | 'outcome' | 'brreg' | 'duplicate' | 'lead'>): string[] {
-  const tags = [`vinkel-${f.meta.v}`];
-  if (f.outcome === 'diskvalifisert') tags.push('diskvalifisert');
-  else if (f.brreg.status === 'verifisert') tags.push('kvalifisert');
-  else tags.push('ikke-verifisert');
+export function buildTags(f: Pick<TaskFacts, 'meta' | 'brreg' | 'duplicate'>): string[] {
+  const tags = [`vinkel-${f.meta.v}`, f.brreg.status === 'verifisert' ? 'brreg-verifisert' : 'brreg-ikke-verifisert'];
   if (f.duplicate) tags.push('duplikat');
-  const regnskapsforerTag = REGNSKAPSFORER_TAGS[f.lead.regnskapsforer];
-  if (regnskapsforerTag) tags.push(regnskapsforerTag);
   return tags;
 }
 
-export function priorityFor(outcome: Outcome): number {
-  return outcome === 'diskvalifisert' ? 4 : 1;
-}
-
 /**
- * Tre-verdis kvalifiseringsstatus brukt både i Sheet-raden (kolonnen «kvalifisert») og i
- * svaret fra /api/lead (samme navn, samme verdier), som igjen bærer den videre til
- * Lead-hendelsens `kvalifisert`-parameter mot Meta. Én kilde til denne avledningen.
+ * Steg 1-raden til Zapier Catch Hook → Google Sheet. `leadId` er nå med (motsatt av forrige
+ * kontrakt, som bevisst utelot den) - steg 2 må kunne finne raden igjen på den. Ingen e-post eller
+ * bransje: feltene samles ikke lenger inn i steg 1.
  */
-export function kvalifisertFor(outcome: Outcome, brreg: BrregMatch): 'ja' | 'nei' | 'ikke verifisert' {
-  return outcome === 'diskvalifisert' ? 'nei' : brreg.status === 'verifisert' ? 'ja' : 'ikke verifisert';
-}
-
-/**
- * Nyttelasten til Zapier Catch Hook → Google Sheet, lead-registeret siden 5. september 2026
- * (avgjørelse: Marius valgte Sheet i oppstartsworkshopen, ikke ClickUp). Nøkkelnavnene er en
- * kontrakt mot Zapen, satt av tillegget til byggebrief 08 samme dato: skal sendes eksakt slik,
- * ellers blir kolonner tomme i arket uten at noen får en feilmelding. `clickupUrl` er tom streng
- * når ClickUp ikke ble brukt (manglende token, eller kallet feilet), aldri null.
- */
-export function buildSheetPayload(f: TaskFacts, clickupUrl: string): Record<string, string> {
+export function buildStep1SheetPayload(f: TaskFacts): Record<string, string> {
   const brreg = f.brreg;
   const orgnr = brreg.status === 'verifisert' ? brreg.enhet.organisasjonsnummer : '';
   return {
+    leadId: f.leadId,
     timestamp: new Date(f.submittedAt).toISOString(),
     navn: f.lead.name,
     firma: f.lead.company,
     telefon: toE164(f.lead.tel),
-    epost: f.lead.email,
-    har_regnskapsforer: f.lead.regnskapsforer,
-    regnskapsprogram: f.lead.program,
-    bransje: f.lead.bransje,
-    melding: f.lead.msg,
+    telefon_oppgitt: f.lead.telRaw,
     vinkel: f.meta.v,
     utm_source: f.meta.utm_source,
+    utm_medium: f.meta.utm_medium,
     utm_campaign: f.meta.utm_campaign,
     utm_content: f.meta.utm_content,
+    utm_term: f.meta.utm_term,
     orgnr,
     brreg_treff: brreg.status === 'verifisert' ? 'ja' : 'nei',
-    kvalifisert: kvalifisertFor(f.outcome, brreg),
-    clickup_url: clickupUrl,
+    side_url: f.meta.pageUrl,
+  };
+}
+
+export type Step2SheetInput = {
+  leadId: string;
+  har: string;
+  program: string;
+  msg: string;
+  step2Status: 'sendt' | 'hoppet_over';
+  step2At: number;
+};
+
+/** Steg 2-raden: finnes/oppdateres i Zapen på `leadId`. Skal aldri opprette en ny rad (AO-3). */
+export function buildStep2SheetPayload(s: Step2SheetInput): Record<string, string> {
+  return {
+    leadId: s.leadId,
+    har: s.har,
+    regnskapsprogram: s.program,
+    melding: s.msg,
+    step2_status: s.step2Status,
+    step2_tidspunkt: new Date(s.step2At).toISOString(),
   };
 }
 
@@ -92,17 +89,11 @@ function esc(s: string): string {
   return s.replace(/[<>]/g, '');
 }
 
+/** ClickUp-beskrivelsen. Sekundært verktøy, oppdateres ikke ved steg 2 (bare Zap/Sheet er det, AO-2/AO-3). */
 export function buildDescription(f: TaskFacts): string {
   const { lead, meta, brreg } = f;
   const lines: string[] = [];
-  lines.push(`**Telefon:** [${formatPhone(lead.tel)}](tel:${toE164(lead.tel)})`);
-  lines.push(`**E-post:** ${esc(lead.email)}`);
-  lines.push(`**Har regnskapsfører i dag:** ${esc(lead.regnskapsforer)}`);
-  lines.push(`**Regnskapsprogram:** ${esc(lead.program)}`);
-  lines.push(`**Bransje:** ${esc(lead.bransje)}`);
-  lines.push('');
-  lines.push('**Melding:**');
-  lines.push(lead.msg ? esc(lead.msg) : '_(ingen melding)_');
+  lines.push(`**Telefon:** [${formatPhone(lead.tel)}](tel:${toE164(lead.tel)}) (oppgitt: ${esc(lead.telRaw)})`);
   lines.push('');
   lines.push('**Enhetsregisteret:**');
   if (brreg.status === 'verifisert') {
@@ -116,13 +107,14 @@ export function buildDescription(f: TaskFacts): string {
     for (const k of brreg.kandidater) lines.push(`  - ${k.organisasjonsnummer} ${esc(k.navn)}${k.organisasjonsform?.kode ? ` (${k.organisasjonsform.kode})` : ''}`);
   }
   lines.push('');
-  lines.push(`**Utfall:** ${f.outcome}${f.duplicate ? ' · duplikat (samme telefonnummer siste 24 timer)' : ''}`);
+  if (f.duplicate) lines.push('**Merk:** samme telefonnummer siste 24 timer (duplikat).');
   lines.push(`**Variant:** ${meta.v}`);
   const utm = [
     ['utm_source', meta.utm_source],
     ['utm_medium', meta.utm_medium],
     ['utm_campaign', meta.utm_campaign],
     ['utm_content', meta.utm_content],
+    ['utm_term', meta.utm_term],
     ['fbclid', meta.fbclid ? 'ja' : ''],
   ].filter(([, v]) => v);
   lines.push(`**UTM:** ${utm.length ? utm.map(([k, v]) => `${k}=${esc(v)}`).join(', ') : '(ingen)'}`);

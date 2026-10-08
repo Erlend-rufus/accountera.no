@@ -37,7 +37,7 @@ export function StickyCta({ watch, enabled }: Props) {
   return (
     <div className="sticky" hidden={!visible} aria-hidden={!visible}>
       <Button href={site.formAnchor} icon="arrow-right" full tabIndex={visible ? 0 : -1}>
-        {site.bookLabel}
+        {site.ringLabel}
       </Button>
     </div>
   );
