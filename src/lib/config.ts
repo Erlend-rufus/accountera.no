@@ -22,4 +22,11 @@ export const config = {
    * 4. september 2026, punkt 0.
    */
   quoteApproved: (env.VITE_QUOTE_APPROVED ?? '').trim().toLowerCase() === 'true',
+  /**
+   * «true» for å vise linjen «Sender du inn kveld eller helg, ringer vi neste virkedag.» under
+   * hero-knappen og skjema-knappen. Standard «false»: ikke avklart med Marius om han faktisk
+   * ringer kveld/helg (design-handoff «Ring meg opp», 8. oktober 2026, AO-5/punkt 6.1). Ikke slå på
+   * uten beskjed fra Erlend.
+   */
+  weekendEveningBannerEnabled: (env.VITE_WEEKEND_EVENING_BANNER ?? '').trim().toLowerCase() === 'true',
 } as const;

@@ -1,13 +1,15 @@
 import type { Config, Context } from '@netlify/functions';
 import { randomUUID } from 'node:crypto';
-import { isSpam, parseMeta, toE164, validateLead, decideOutcome } from '../../src/shared/validate';
+import { isSpam, parseMeta, toE164, validateStep1 } from '../../src/shared/validate';
 import { log } from '../lib/log';
 import { lookupCompany } from '../lib/brreg';
-import { createTask, ensureTags } from '../lib/clickup';
+import { createTask, ensureTags, PRIORITY } from '../lib/clickup';
 import { isDuplicate } from '../lib/dedupe';
+import { isRateLimited } from '../lib/ratelimit';
 import { postToZapier } from '../lib/zapier';
 import { sendLeadToMeta } from '../lib/meta';
-import { buildDescription, buildSheetPayload, buildTags, kvalifisertFor, priorityFor, taskName } from '../lib/describe';
+import { buildDescription, buildStep1SheetPayload, buildTags, taskName } from '../lib/describe';
+import { createLead, findLeadIdByClientEventId, recordIdempotencyKey } from '../lib/leads';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -24,32 +26,63 @@ export default async function handler(req: Request, context: Context): Promise<R
   }
 
   const now = Date.now();
-  const leadId = randomUUID();
 
   // 1. Spam avvises stille. Spammere skal ikke få vite at de ble avvist.
   if (isSpam(input, now)) {
-    log('info', 'lead.spam', { leadId });
-    return json({ leadId, taskId: null, utfall: 'kvalifisert', kvalifisert: 'ja' });
+    log('info', 'lead.spam', { leadId: null });
+    return json({ leadId: randomUUID() }, 201);
   }
 
-  // 2. Validering med samme regler og tekster som i nettleseren.
-  const v = validateLead(input);
-  if (!v.ok) return json({ errors: v.errors }, 400);
-  const lead = v.data;
+  // 2. Rate limiting per IP (AO-2). Enkelt, glidende vindu. Svarer 429, ingen detaljer.
+  if (await isRateLimited(context.ip || '', now)) {
+    log('warn', 'lead.rate_limited', {});
+    return json({ error: 'rate_limited' }, 429);
+  }
+
+  // 3. Idempotens: samme clientEventId (dobbeltklikk, nettverksretry) gir samme leadId, aldri en ny rad.
   const meta = parseMeta(input);
+  if (meta.clientEventId) {
+    const existingId = await findLeadIdByClientEventId(meta.clientEventId);
+    if (existingId) {
+      log('info', 'lead.idempotent_replay', { leadId: existingId });
+      return json({ leadId: existingId }, 201);
+    }
+  }
 
-  // 3. Utfall bygger bare på skjemasvaret.
-  const outcome = decideOutcome(lead.bransje);
+  // 4. Validering med samme regler og tekster som i nettleseren.
+  const v = validateStep1(input);
+  if (!v.ok) return json({ errors: v.errors }, 422);
+  const lead = v.data;
 
-  // 4. Enhetsregisteret. Blokkerer aldri, feiler aldri.
+  // 5. Enhetsregisteret. Blokkerer aldri, feiler aldri.
   const brregResult = await lookupCompany(lead.company);
+  const leadId = randomUUID();
   if (brregResult.error) log('warn', 'brreg.failed', { leadId, error: brregResult.error });
 
-  // 5. ClickUp-task. Ikke lenger lead-registeret (avgjørelse 5. september 2026, Google Sheet via
-  // Zapier er det), bare et sekundært arbeidsverktøy. Skal aldri kunne stoppe en innsending, og
-  // feil her er ikke kritisk: logges på «warn», ikke «error». Duplikat: opprett likevel, men tagg.
+  // 6. Lagre raden (steg 1). Kritisk for at steg 2 skal finne den igjen, se netlify/lib/leads.ts.
   const duplicate = await isDuplicate(lead.tel, now);
-  const facts = { lead, meta, outcome, brreg: brregResult.match, leadId, duplicate, submittedAt: now };
+  const facts = { lead, meta, brreg: brregResult.match, leadId, duplicate, submittedAt: now };
+  await createLead({
+    id: leadId,
+    createdAt: now,
+    name: lead.name,
+    company: lead.company,
+    tel: toE164(lead.tel),
+    telRaw: lead.telRaw,
+    variant: meta.v,
+    utm_source: meta.utm_source,
+    utm_medium: meta.utm_medium,
+    utm_campaign: meta.utm_campaign,
+    utm_content: meta.utm_content,
+    utm_term: meta.utm_term,
+    fbclid: meta.fbclid,
+    pageUrl: meta.pageUrl,
+    brreg: brregResult.match,
+  });
+  if (meta.clientEventId) await recordIdempotencyKey(meta.clientEventId, leadId);
+
+  // 7. ClickUp-task. Sekundært arbeidsverktøy, ikke lead-registeret. Skal aldri kunne stoppe en
+  // innsending: feil her er ikke kritisk, logges på «warn». Duplikat: opprett likevel, men tagg.
   const tags = buildTags(facts);
   const steps: Record<string, boolean> = { brreg: !brregResult.error };
 
@@ -62,7 +95,7 @@ export default async function handler(req: Request, context: Context): Promise<R
         name: taskName(lead),
         markdown: buildDescription(facts),
         tags,
-        priority: priorityFor(outcome),
+        priority: PRIORITY.urgent,
       });
       steps.clickup = true;
     } catch (e) {
@@ -74,11 +107,10 @@ export default async function handler(req: Request, context: Context): Promise<R
     log('warn', 'lead.clickup_token_missing', { leadId });
   }
 
-  // 6. Zapier → Google Sheet. Dette ER lead-registeret nå, og dermed kritisk: mister vi denne
-  // raden, mister vi henvendelsen. Prøver på nytt ved feil (se postToZapier), og total feil
-  // logges høyt uansett om ClickUp-tasken over lyktes eller ikke.
+  // 8. Zapier → Google Sheet, steg 1. Dette ER lead-registeret, og dermed kritisk: mister vi denne
+  // raden, mister vi henvendelsen. Prøver på nytt ved feil (se postToZapier).
   const zapierUrl = process.env.ZAPIER_HOOK_URL;
-  const sheetPayload = buildSheetPayload(facts, task?.url ?? '');
+  const sheetPayload = buildStep1SheetPayload(facts);
   if (zapierUrl) {
     steps.zapier = await postToZapier(zapierUrl, sheetPayload, leadId);
   } else {
@@ -87,18 +119,17 @@ export default async function handler(req: Request, context: Context): Promise<R
   }
   if (!steps.zapier) log('error', 'lead.row_not_written', { leadId });
 
-  // 7. Meta Conversions API, bare med samtykke. Samme event_id som pixelen.
+  // 9. Meta Conversions API, bare med samtykke. Samme event_id (clientEventId) som pixelen, se AO-4.
   const pixelId = process.env.META_PIXEL_ID;
   const capiToken = process.env.META_CAPI_TOKEN;
-  if (meta.consent === 'all' && pixelId && capiToken) {
+  if (meta.consent === 'all' && meta.clientEventId && pixelId && capiToken) {
     const origin = req.headers.get('origin') || req.headers.get('referer') || process.env.SITE_URL || context.site?.url || '';
     const sourceUrl = origin ? new URL(`/?v=${meta.v}`, origin).toString() : '';
     steps.capi = await sendLeadToMeta(
       pixelId,
       capiToken,
       {
-        eventId: leadId,
-        email: lead.email,
+        eventId: meta.clientEventId,
         phoneE164: toE164(lead.tel),
         fbclid: meta.fbclid,
         sourceUrl,
@@ -112,9 +143,9 @@ export default async function handler(req: Request, context: Context): Promise<R
     steps.capi = false;
   }
 
-  // 8. Svar. Loggen: leadId, utfall og steg. Aldri persondata.
-  log('info', 'lead.done', { leadId, utfall: outcome, verifisert: brregResult.match.status, duplikat: duplicate, taskId: task?.id ?? null, steps });
-  return json({ leadId, taskId: task?.id ?? null, utfall: outcome, kvalifisert: kvalifisertFor(outcome, brregResult.match) });
+  // 10. Svar. Loggen: leadId og steg. Aldri persondata.
+  log('info', 'lead.done', { leadId, verifisert: brregResult.match.status, duplikat: duplicate, taskId: task?.id ?? null, steps });
+  return json({ leadId }, 201);
 }
 
 export const config: Config = { path: '/api/lead' };

@@ -22,6 +22,11 @@
   status = 200
 
 [[redirects]]
+  from = "/takk/bekreftet"
+  to = "/takk/bekreftet.html"
+  status = 200
+
+[[redirects]]
   from = "/takker-nei"
   to = "/takker-nei.html"
   status = 200

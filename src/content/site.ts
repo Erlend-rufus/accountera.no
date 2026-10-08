@@ -1,6 +1,7 @@
 /**
- * Felles tekster. Transkribert ordrett fra Claude Design-rendringene (runde 1) med runde 2-endringene i briefen.
- * Skal kontrolleres mot «Accountera Landingsside.dc.html» etter runde 2 når filen foreligger. Ikke omskriv.
+ * Felles tekster. Fra design-handoff «Ring meg opp» (8. oktober 2026), README.md, ordrett. Ikke omskriv.
+ * Unntak markert i kommentar: nettverksfeil (åpen beslutning #6) og meta-beskrivelsen (åpen beslutning #9)
+ * er forslag som skal godkjennes før lansering, ikke avtalt tekst.
  */
 export const site = {
   name: 'Accountera',
@@ -9,16 +10,27 @@ export const site = {
   footerLine: 'Kristiansand. Kunder over hele landet.',
   privacyLabel: 'Personvernerklæring',
   privacyHref: '/personvern',
-  bookLabel: 'Book en samtale',
+  ringLabel: 'Ring meg opp',
   backLabel: 'Tilbake til forsiden',
-  ctaSub: 'Uforpliktende. Du snakker med en regnskapsfører, ikke en selger.',
-  formAnchor: '#skjema',
+  ctaSub: 'Legg igjen nummeret, så ringer en regnskapsfører deg i løpet av dagen. Uforpliktende.',
+  /** Standard av (AO-5). Vises under hero-knappen og skjema-knappen når config.weekendEveningBannerEnabled er på. */
+  weekendEveningNote: 'Sender du inn kveld eller helg, ringer vi neste virkedag.',
+  formAnchor: '#acc-form',
+  heroCtaId: 'acc-hero-cta',
   titles: {
-    index: 'Accountera – regnskapsbyrå i Kristiansand',
-    takk: 'Takk – velg et tidspunkt',
-    takkerNei: 'Takk for henvendelsen',
+    index: 'Accountera – ring oss, regnskapsbyrå i Kristiansand',
+    takk: 'Nummeret er mottatt – Accountera',
+    bekreftet: 'Tidspunkt bekreftet – Accountera',
+    takkerNei: 'Takk for henvendelsen – Accountera',
     personvern: 'Personvernerklæring – Accountera',
   },
+  /**
+   * Forslag (åpen beslutning #9 i arbeidsordren). Ikke publisert som endelig - lagt fram til
+   * godkjenning sammen med resten av forhåndsvisningen. Ingen «30 minutter», «Book en samtale»,
+   * pris eller tidsløfte strengere enn «i løpet av dagen».
+   */
+  metaDescription:
+    'Legg igjen navn, telefon og firmanavn, så ringer en regnskapsfører deg i løpet av dagen. Autorisert regnskapsførerselskap i Kristiansand.',
 } as const;
 
 export type Variant = 'a' | 'b' | 'c';
@@ -30,8 +42,10 @@ export const heroes: Record<
 > = {
   a: {
     kicker: 'For deg som fører regnskapet selv',
-    title: ['Fått brev fra Skatteetaten?', 'Vi leser det sammen med deg.'],
-    lead: 'Du får en autorisert regnskapsfører som ser på brevet, finner ut hva som er feil, og sier hva som må gjøres. 30 minutter, uforpliktende.',
+    // Linjeskift mellom disse to kun på desktop (hero__break--desktop i Hero.tsx). Hardt mellomrom
+    // mellom «Vi» og «leser» slik at «Vi» aldri står alene på slutten av en linje.
+    title: ['Fått brev fra Skatteetaten?', 'Vi leser det sammen med deg.'],
+    lead: 'Du får en autorisert regnskapsfører som ser på brevet, finner ut hva som er feil, og sier hva som må gjøres.',
     card: 'brev',
   },
   b: {
@@ -74,15 +88,15 @@ export const how = {
   heading: 'Slik fungerer det',
   steps: [
     {
-      title: 'En samtale på 30 minutter.',
+      title: 'Du legger igjen nummeret ditt.',
+      body: 'Navn, telefon og firmanavn. Ingen forpliktelser.',
+    },
+    {
+      title: 'En regnskapsfører ringer deg i løpet av dagen.',
       body: 'Du forteller hvor skoen trykker. Vi sier ærlig om vi er riktig byrå for deg.',
     },
     {
-      title: 'Du får én fast regnskapsfører.',
-      body: 'Ett menneske som kjenner bedriften din og svarer på e-post og telefon.',
-    },
-    {
-      title: 'Vi ordner overgangen.',
+      title: 'Du får én fast regnskapsfører, og vi ordner overgangen.',
       body: 'Fra forrige byrå eller fra programmet du fører i selv. Du slipper å sitte i midten.',
     },
   ],
@@ -94,19 +108,14 @@ export const team = {
 };
 
 export const proof = {
-  heading: ['Fortell oss kort hva', 'det gjelder'],
-  lead: 'Fyll ut skjemaet, så velger du et tidspunkt for samtalen med en gang. Samtalen tar 30 minutter og er uforpliktende.',
+  heading: 'Legg igjen nummeret ditt',
+  lead: 'Så ringer en regnskapsfører deg i løpet av dagen. Du snakker med en regnskapsfører, ikke en selger.',
   facts: ['Autorisert regnskapsførerselskap', 'Sju ansatte i Kristiansand', 'Kunder over hele landet'],
 };
 
 /**
- * Kundesitat ved skjemaet, statisk tekst (ikke CMS, ikke database). Fra en kunde Sondre ringte
- * 4. september 2026. Gates bak config.quoteApproved, som er «false» inntil skriftlig «ja»
- * foreligger, se tillegg til byggebrief 08. Ikke omskriv. Ingen navn, firmanavn eller by.
- *
- * Kunden ga tre sitater. Et tredje («byttet på grunn av pris») skal aldri brukes: kampanjens
- * premiss er at usikkerhet er smertepunktet, ikke pris. To sitater finnes her for rotasjon;
- * uten en rotasjonskomponent vises «primary» alene, som avtalt i tillegget.
+ * Kundesitat ved skjemaet, statisk tekst (ikke CMS, ikke database). Gates bak config.quoteApproved.
+ * Uendret fra forrige versjon - se tillegg til byggebrief 08. Ikke omskriv.
  */
 export const testimonial = {
   primary: {
@@ -125,29 +134,33 @@ export const consent = {
   necessary: 'Bare nødvendige',
 };
 
+/** Samme «Ha gjerne dette klart»-kort på takkesiden og bekreftet-siden. */
+export const prepare = {
+  heading: 'Ha gjerne dette klart',
+  items: ['Hvilket regnskapsprogram du bruker i dag', 'Omtrent hvor mange bilag du har i måneden', 'Eventuelle brev fra Skatteetaten'],
+};
+
 export const takk = {
-  kicker: 'Meldingen er sendt',
-  titleWithName: (firstName: string) => `Takk, ${firstName}. Velg et tidspunkt som passer deg.`,
-  titleNoName: 'Takk. Velg et tidspunkt som passer deg.',
-  lead: 'Så ringer en av regnskapsførerne våre deg på tidspunktet du velger. Ikke et servicesenter, ikke en selger.',
-  prepare: {
-    heading: 'Ha gjerne dette klart',
-    items: [
-      'Hvilket regnskapsprogram du bruker i dag',
-      'Omtrent hvor mange bilag du har i måneden',
-      'Eventuelle brev fra Skatteetaten',
-    ],
+  eyebrow: 'Nummeret er mottatt',
+  /** «Takk, Kari. Vi ringer deg på 912 34 567 i løpet av dagen.» Tallet med hardt mellomrom, ikke vanlig. */
+  title: (firstName: string, telRaw: string) => `Takk, ${firstName}. Vi ringer deg på ${telRaw.replace(/ /g, ' ')} i løpet av dagen.`,
+  step2: {
+    eyebrowLabel: 'Valgfritt',
+    intro: 'Mens du venter: tre raske spørsmål, så er regnskapsføreren forberedt når vi ringer.',
+    done: 'Takk, vi snakkes i løpet av dagen.',
   },
-  noTimeBefore: 'Passer ingen av tidene? Ring ',
-  noTimeAfter: ', eller vent, så ringer vi deg.',
+  calendlyPrompt: 'Vil du heller velge tidspunkt selv? ',
+  calendlyLink: 'Book en samtale.',
+  calendlyFallbackBefore: 'Passer ingen av tidene? Ring ',
+  calendlyFallbackAfter: ', eller vent, så ringer vi deg.',
   calendlyFailed: 'Kalenderen lastet ikke. Vi ringer deg i stedet.',
   calendlyLoading: 'Kalenderen laster.',
-  confirmed: {
-    kicker: 'Tidspunkt bekreftet',
-    titleWithTime: (when: string) => `Vi ringer deg ${when}.`,
-    titleNoTime: 'Vi ringer deg på tidspunktet du valgte.',
-    lead: 'Du får en bekreftelse på e-post. Samtalen tas av en regnskapsfører, ikke et servicesenter.',
-  },
+};
+
+export const bekreftet = {
+  eyebrow: 'Tidspunkt bekreftet',
+  title: (when: string) => `Vi ringer deg ${when}.`,
+  lead: 'Du får en bekreftelse på e-post. Samtalen tas av en regnskapsfører, ikke et servicesenter.',
 };
 
 export const takkerNei = {

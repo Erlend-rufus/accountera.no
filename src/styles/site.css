@@ -52,17 +52,31 @@
   gap: 1.25rem;
 }
 .hero__title { margin-top: 0.25rem; }
+/* Hero A: linjeskiftet etter «Skatteetaten?» gjelder kun desktop (AC #5: «Vi» skal aldri stå alene). */
+.hero__break--desktop { display: none; }
+@media (min-width: 960px) {
+  .hero__break--desktop { display: block; }
+}
 .hero__lead { max-width: 34rem; }
 .hero__cta { margin-top: 0.5rem; }
+@media (min-width: 960px) {
+  .hero__cta .ds-btn--full { width: 18.75rem; }
+}
 .hero__sub { margin-top: -0.25rem; }
 @media (min-width: 960px) {
   .hero__in {
-    padding-top: 4rem;
-    padding-bottom: 6rem;
+    padding-top: 7.5rem;
+    padding-bottom: 7.5rem;
     max-width: calc(var(--acc-max) + 2 * var(--acc-gutter));
   }
-  .hero__in > * { max-width: 34rem; }
-  .hero__title { max-width: 34rem; }
+  .hero__in > * { max-width: 38.75rem; }
+  .hero__title { max-width: 38.75rem; }
+  /* Foto/navy fyller hele heroen på desktop (se src/ds/styles.css): teksten ligger over, kremfarget. */
+  .hero .ds-kicker,
+  .hero .hero__title,
+  .hero .hero__lead,
+  .hero .hero__sub { color: var(--acc-cream); }
+  .hero .hero__sub { color: var(--acc-cream-a72); }
 }
 
 /* Seksjoner */
@@ -243,6 +257,12 @@
   .sub__grid--wide { grid-template-columns: 5fr 6fr; }
 }
 
+/* Bekreftet-siden */
+.bekreftet { max-width: 40rem; display: grid; gap: 1.5rem; align-content: start; }
+.bekreftet__lead { max-width: 30em; }
+.bekreftet__back { justify-self: start; }
+.prepare--narrow { max-width: 32.5rem; }
+
 /* Calendly */
 .cal {
   border: 1px solid var(--acc-line);
@@ -282,15 +302,44 @@
 .prose .table-wrap { overflow-x: auto; }
 .prose hr { border: 0; border-top: 1px solid var(--acc-line-soft); margin: 0.5rem 0; }
 
-/* Takkesiden: på mobil intro → kalender → kort. På desktop intro og kort til venstre, kalender til høyre. */
-.sub__grid--takk {
-  grid-template-areas: 'intro' 'cal' 'aside';
-}
-@media (min-width: 960px) {
-  .sub__grid--takk {
-    grid-template-columns: 5fr 6fr;
-    grid-template-areas: 'intro cal' 'aside cal';
-    align-items: start;
-  }
-}
 .hp input { background: transparent; color: inherit; border: 0; }
+
+/* Takkesiden (steg 2): to kolonner, intro+kort til venstre, steg 2-skjema til høyre. Calendly ligger
+   under grid-en, ikke i den - design-handoff «Ring meg opp», 8. oktober 2026. */
+.sub__grid--takk2 { grid-template-columns: 1fr; gap: 2rem; }
+@media (min-width: 960px) {
+  .sub__grid--takk2 { grid-template-columns: 1fr 1.1fr; gap: 4rem; align-items: start; }
+}
+.step2__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: 0.25rem; }
+.step2__skip {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 2.75rem;
+  font: inherit;
+  font-weight: var(--acc-w-medium);
+  color: var(--acc-primary);
+  cursor: pointer;
+}
+.step2__skip:hover { color: var(--acc-navy); }
+.step2__skip:disabled { opacity: var(--acc-disabled-opacity, 0.4); cursor: default; }
+.takk__cal {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--acc-line-soft);
+}
+.takk__cal-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  color: inherit;
+  cursor: pointer;
+}
+.takk__cal-link:hover { color: var(--acc-navy); }
+.takk__cal-fallback { margin-top: 1.125rem; }
+@media (min-width: 960px) {
+  .takk__cal { margin-top: 3rem; padding-top: 3rem; }
+}

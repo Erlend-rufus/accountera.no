@@ -8,3 +8,4 @@ export { Icon } from './components/Icon';
 export { Input, Select, Textarea } from './components/Field';
 export { Notice } from './components/Notice';
 export { Card } from './components/Card';
+export { RadioGroup, type RadioOption } from './components/RadioGroup';

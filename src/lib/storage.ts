@@ -7,19 +7,17 @@ const KEY_UTM = 'acc_utm';
 const KEY_LEAD = 'acc_lead';
 const KEY_LEAD_PENDING = 'acc_lead_pending';
 
-export type Utm = { utm_source: string; utm_medium: string; utm_campaign: string; utm_content: string; fbclid: string };
+export type Utm = { utm_source: string; utm_medium: string; utm_campaign: string; utm_content: string; utm_term: string; fbclid: string };
 export type StoredLead = {
   leadId: string;
   name: string;
   firstName: string;
-  email: string;
-  tel: string;
-  taskId: string | null;
-  utfall: string;
+  /** Det besøkeren skrev, f.eks. «912 34 567». Vist på takkesiden, med hardt mellomrom. */
+  telRaw: string;
   /** Hero-varianten som var vist ved innsending. Til Meta-hendelsenes `vinkel`-parameter. */
   v: 'a' | 'b' | 'c';
-  /** Samme tre-verdis status som Sheet-kolonnen «kvalifisert». Til Lead-hendelsens `kvalifisert`-parameter. */
-  kvalifisert: 'ja' | 'nei' | 'ikke verifisert';
+  /** Samme event_id som sendt til Meta ved steg 1 (pixel + CAPI), til Schedule-hendelsen i steg 2/Calendly. */
+  clientEventId: string;
 };
 
 function get(key: string): string | null {
@@ -52,7 +50,7 @@ export function setStoredVariant(v: string) {
 }
 
 export function getStoredUtm(): Utm {
-  const empty: Utm = { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', fbclid: '' };
+  const empty: Utm = { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '', fbclid: '' };
   try {
     const raw = get(KEY_UTM);
     return raw ? { ...empty, ...(JSON.parse(raw) as Partial<Utm>) } : empty;
@@ -83,4 +81,14 @@ export function consumeLeadPending(): boolean {
   const pending = get(KEY_LEAD_PENDING) === '1';
   if (pending) del(KEY_LEAD_PENDING);
   return pending;
+}
+
+const KEY_BOOKED_WHEN = 'acc_booked_when';
+
+/** Formatert tidspunkt fra Calendly-hendelsen, til bekreftet-siden (egen side, ikke samme visning). */
+export function setBookedWhen(when: string) {
+  set(KEY_BOOKED_WHEN, when);
+}
+export function getBookedWhen(): string | null {
+  return get(KEY_BOOKED_WHEN);
 }

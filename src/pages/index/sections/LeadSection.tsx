@@ -7,13 +7,11 @@ import { LeadForm } from '../LeadForm';
 
 export function LeadSection({ variant, utm, sectionRef }: { variant: Variant; utm: Utm; sectionRef: RefObject<HTMLElement | null> }) {
   return (
-    <section id="skjema" ref={sectionRef} className="sec lead-sec" aria-labelledby="lead-title">
+    <section id="acc-form" ref={sectionRef} className="sec lead-sec" aria-labelledby="lead-title">
       <div className="ds-container lead-sec__grid">
         <div className="proof">
           <h2 id="lead-title" className="ds-h2">
-            {proof.heading[0]}
-            <br />
-            {proof.heading[1]}
+            {proof.heading}
           </h2>
           <p>{proof.lead}</p>
           <div className="proof__logo">

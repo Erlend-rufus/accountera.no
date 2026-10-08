@@ -30,6 +30,7 @@ export function initVariant(): { variant: Variant; utm: Utm } {
     utm_medium: pick('utm_medium'),
     utm_campaign: pick('utm_campaign'),
     utm_content: pick('utm_content'),
+    utm_term: pick('utm_term'),
     fbclid: pick('fbclid'),
   };
   setStoredUtm(utm);

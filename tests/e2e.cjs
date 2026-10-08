@@ -75,6 +75,7 @@ async function audit(page, label, width) {
     ['index-b', '/?v=b'],
     ['index-c', '/?v=c'],
     ['takk', '/takk'],
+    ['bekreftet', '/takk/bekreftet'],
     ['takker-nei', '/takker-nei'],
     ['personvern', '/personvern'],
   ];
@@ -90,9 +91,8 @@ async function audit(page, label, width) {
       await page.goto(BASE + route, { waitUntil: 'networkidle' });
       await page.waitForTimeout(300);
       await page.screenshot({ path: path.join(OUT, `${name}-${width}.png`), fullPage: true });
-      // Uten samtykke: ingen eksterne forespørsler (Calendly er unntaket på /takk siden den er avtalt flyt).
-      const ext = external.filter((u) => !u.includes('calendly.com'));
-      if (ext.length) problems.push(`${name}@${width}: eksterne forespørsler før samtykke: ${ext.join(', ')}`);
+      // Uten samtykke og uten å ha åpnet Calendly-lenken: ingen eksterne forespørsler.
+      if (external.length) problems.push(`${name}@${width}: eksterne forespørsler før samtykke/åpning: ${external.join(', ')}`);
       problems.push(...(await audit(page, name, width)));
 
       if (name === 'index-a' && width === 390) {
@@ -111,33 +111,37 @@ async function audit(page, label, width) {
         console.log('sticky rect', JSON.stringify(rect));
         if (rect.h < 60 || rect.bottom > rect.vh + 1 || rect.top < rect.vh - 120) problems.push(`index-a@390: sticky CTA er ikke plassert nederst i viewport: ${JSON.stringify(rect)}`);
         await page.screenshot({ path: path.join(OUT, `index-a-390-sticky.png`) });
-        await page.evaluate(() => document.getElementById('skjema').scrollIntoView());
+        await page.evaluate(() => document.getElementById('acc-form').scrollIntoView());
         await page.waitForTimeout(400);
         const hiddenAtForm = await page.$eval('.sticky', (el) => el.hidden);
         if (!hiddenAtForm) problems.push('index-a@390: sticky CTA synlig mens skjemaet er i viewport');
-        // Skjemafeil: send tomt skjema, første felt får fokus, ingen rødt.
+        // Nøyaktig tre felt synlige i steg 1.
+        const fieldCount = await page.$$eval('#f-name, #f-tel, #f-company', (els) => els.length);
+        if (fieldCount !== 3) problems.push(`index-a@390: ventet 3 felt i steg 1, fant ${fieldCount}`);
+        const strayFields = await page.$$eval('#f-email, #f-bransje, #f-program, #f-msg, #f-regnskapsforer', (els) => els.length);
+        if (strayFields !== 0) problems.push(`index-a@390: fant ${strayFields} felt fra det gamle skjemaet (epost/bransje/program/msg/regnskapsforer) som skal være borte`);
+        // Skjemafeil: send tomt skjema, første felt (navn) får fokus, nøyaktig tre feilmeldinger.
         await page.click('button[type=submit]');
         await page.waitForTimeout(300);
         const focused = await page.evaluate(() => document.activeElement && document.activeElement.id);
         if (focused !== 'f-name') problems.push(`index-a@390: første feilfelt fikk ikke fokus (aktivt: ${focused})`);
         const errCount = await page.$$eval('.ds-field__error', (els) => els.length);
-        if (errCount !== 7) problems.push(`index-a@390: ventet 7 feilmeldinger, fikk ${errCount}`);
-        await page.screenshot({ path: path.join(OUT, `index-a-390-feil.png`), fullPage: true });
-        problems.push(...(await audit(page, 'index-a-feil', width)));
-        // Ugyldig telefon og tom e-post
+        if (errCount !== 3) problems.push(`index-a@390: ventet 3 feilmeldinger (navn, telefon, firma), fikk ${errCount}`);
+        // Ugyldig telefon: bare én feil igjen (telefon).
         await page.fill('#f-name', 'Kari Nordmann');
         await page.fill('#f-company', 'Eksempel AS');
         await page.fill('#f-tel', '123');
-        await page.selectOption('#f-regnskapsforer', 'Nei, jeg fører selv');
-        await page.selectOption('#f-program', 'Fiken');
-        await page.selectOption('#f-bransje', 'Bygg, anlegg og håndverk');
         await page.click('button[type=submit]');
         await page.waitForTimeout(300);
         const errs = await page.$$eval('.ds-field__error', (els) => els.map((e) => e.textContent.trim()));
-        if (errs.length !== 2) problems.push(`index-a@390: ventet 2 feil (tel, e-post), fikk ${errs.length}: ${errs.join(' | ')}`);
+        if (errs.length !== 1) problems.push(`index-a@390: ventet 1 feil (telefon), fikk ${errs.length}: ${errs.join(' | ')}`);
       }
       if (name === 'takk') {
-        // Uten VITE_CALENDLY_URL vises telefon-fallback. Med URL må boksen ha minimumshøyde 700/760.
+        // Calendly er bak en lenke, ikke lastet ved sideinnlasting (AO-6).
+        const calBeforeOpen = await page.$('.cal');
+        if (calBeforeOpen) problems.push(`takk@${width}: Calendly-boksen er synlig før lenken er åpnet`);
+        await page.click('.takk__cal-link');
+        await page.waitForTimeout(600);
         const cal = await page.$('.cal');
         if (cal) {
           const h = await cal.evaluate((el) => parseFloat(getComputedStyle(el).minHeight));
@@ -145,7 +149,7 @@ async function audit(page, label, width) {
           if (h < want) problems.push(`takk@${width}: Calendly min-height ${h} < ${want}`);
         } else {
           const notice = await page.$('.ds-notice');
-          if (!notice) problems.push(`takk@${width}: verken Calendly-boks eller fallback-Notice`);
+          if (!notice) problems.push(`takk@${width}: verken Calendly-boks eller fallback-Notice etter åpning`);
         }
       }
       await ctx.close();

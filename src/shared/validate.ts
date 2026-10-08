@@ -1,31 +1,28 @@
 /**
- * Validering av skjemaet. Kjøres både i nettleseren (opplevelsen) og i funksjonen (fordi nettleseren ikke kan stoles på).
- * Samme regler, samme tekster. Ingen DOM-avhengigheter.
+ * Validering av to-stegs leadskjemaet. Kjøres både i nettleseren (opplevelsen) og i funksjonene
+ * (fordi nettleseren ikke kan stoles på). Samme regler, samme tekster. Ingen DOM-avhengigheter.
+ *
+ * Steg 1 (navn, telefon, firmanavn) er obligatorisk og valideres strengt. Steg 2 (har/program/msg)
+ * er valgfritt i sin helhet og valideres aldri bort - se design-handoff «Ring meg opp», 8. oktober 2026.
  */
-import { BRANSJE_OPTIONS, DISQUALIFYING_BRANSJER, MSG_MAX, PROGRAM_OPTIONS, REGNSKAPSFORER_OPTIONS, errors } from './form-content';
+import { HAR_OPTIONS, MSG_MAX, PROGRAM_OPTIONS, errors } from './form-content';
 
-export type LeadFieldName = 'name' | 'company' | 'tel' | 'email' | 'regnskapsforer' | 'program' | 'bransje' | 'msg';
+export type Step1FieldName = 'name' | 'tel' | 'company';
 
-export type LeadFields = {
+export type Step1Fields = {
   name: string;
   company: string;
-  /** Åtte sifre uten landkode, f.eks. «40156666». */
+  /** Åtte sifre uten landkode, f.eks. «91234567». */
   tel: string;
-  email: string;
-  /** Har du regnskapsfører i dag? Måler sammensetning, påvirker ikke kvalifisering (tillegg til byggebrief 08). */
-  regnskapsforer: string;
-  program: string;
-  bransje: string;
-  msg: string;
+  /** Det besøkeren faktisk skrev, bevart for visning («912 34 567», se AO-2 punkt 2). */
+  telRaw: string;
 };
 
-export type FieldError = { field: LeadFieldName; message: string };
+export type FieldError = { field: Step1FieldName; message: string };
 
-export type ValidationResult = { ok: true; data: LeadFields } | { ok: false; errors: FieldError[] };
+export type ValidationResult = { ok: true; data: Step1Fields } | { ok: false; errors: FieldError[] };
 
-export type Outcome = 'kvalifisert' | 'diskvalifisert';
-
-const FIELD_ORDER: LeadFieldName[] = ['name', 'company', 'tel', 'email', 'regnskapsforer', 'program', 'bransje', 'msg'];
+const FIELD_ORDER: Step1FieldName[] = ['name', 'tel', 'company'];
 
 function str(v: unknown): string {
   if (typeof v === 'string') return v;
@@ -36,47 +33,31 @@ function str(v: unknown): string {
 /**
  * Norsk mobil- eller fasttelefonnummer: åtte sifre som starter på 2 til 9, med eller uten «+47» / «0047».
  * Mellomrom, bindestrek, punktum og parenteser fjernes før test. Returnerer de åtte sifrene, eller null.
+ * Regex er eksakt den arbeidsordren oppgir: `^(\+47|0047)?[2-9]\d{7}$`.
  */
 export function normalizePhone(raw: string): string | null {
   const cleaned = str(raw).replace(/[\s\-.()]/g, '');
-  const m = /^(?:\+47|0047|47)?([2-9]\d{7})$/.exec(cleaned);
+  const m = /^(?:\+47|0047)?([2-9]\d{7})$/.exec(cleaned);
   return m ? m[1] : null;
 }
 
-/** E.164 for Meta og ClickUp: «+4740156666». */
+/** E.164 for Meta: «+4791234567». */
 export function toE164(eightDigits: string): string {
   return `+47${eightDigits}`;
 }
 
-/** Visning: «40 15 66 66». */
+/** Visning: «91 23 45 67». */
 export function formatPhone(eightDigits: string): string {
   return eightDigits.replace(/(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4');
 }
 
-export function isValidEmail(raw: string): boolean {
-  const s = str(raw).trim();
-  if (s.length < 5 || s.length > 254) return false;
-  // Ett @, ingen mellomrom, domene med minst ett punktum og gyldige tegn.
-  return /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(s);
-}
-
-export function decideOutcome(bransje: string): Outcome {
-  return DISQUALIFYING_BRANSJER.includes(str(bransje).trim()) ? 'diskvalifisert' : 'kvalifisert';
-}
-
-export function validateLead(input: Record<string, unknown>): ValidationResult {
+export function validateStep1(input: Record<string, unknown>): ValidationResult {
   const errs: FieldError[] = [];
   const name = str(input.name).trim();
-  const company = str(input.company).trim();
   const telRaw = str(input.tel).trim();
-  const email = str(input.email).trim();
-  const regnskapsforer = str(input.regnskapsforer).trim();
-  const program = str(input.program).trim();
-  const bransje = str(input.bransje).trim();
-  const msg = str(input.msg).trim();
+  const company = str(input.company).trim();
 
   if (!name) errs.push({ field: 'name', message: errors.name });
-  if (!company) errs.push({ field: 'company', message: errors.company });
 
   let tel = '';
   if (!telRaw) errs.push({ field: 'tel', message: errors.telMissing });
@@ -86,30 +67,49 @@ export function validateLead(input: Record<string, unknown>): ValidationResult {
     else tel = n;
   }
 
-  if (!email) errs.push({ field: 'email', message: errors.emailMissing });
-  else if (!isValidEmail(email)) errs.push({ field: 'email', message: errors.emailInvalid });
-
-  if (!(REGNSKAPSFORER_OPTIONS as readonly string[]).includes(regnskapsforer)) errs.push({ field: 'regnskapsforer', message: errors.regnskapsforer });
-  if (!(PROGRAM_OPTIONS as readonly string[]).includes(program)) errs.push({ field: 'program', message: errors.program });
-  if (!(BRANSJE_OPTIONS as readonly string[]).includes(bransje)) errs.push({ field: 'bransje', message: errors.bransje });
-
-  if (msg.length > MSG_MAX) errs.push({ field: 'msg', message: errors.msgTooLong });
+  if (!company) errs.push({ field: 'company', message: errors.company });
 
   if (errs.length) {
     errs.sort((a, b) => FIELD_ORDER.indexOf(a.field) - FIELD_ORDER.indexOf(b.field));
     return { ok: false, errors: errs };
   }
-  return { ok: true, data: { name, company, tel, email: email.toLowerCase(), regnskapsforer, program, bransje, msg } };
+  return { ok: true, data: { name, tel, telRaw, company } };
 }
 
-/** Skjulte felt som følger med skjemaet. */
+/** Steg 2: tre valgfrie spørsmål. Aldri feil, bare sanert. Ukjent/tomt gir tom streng. */
+export type HarValue = 'selv' | 'byraa' | 'ingen' | '';
+
+export type Step2Fields = {
+  har: HarValue;
+  program: string;
+  msg: string;
+  skipped: boolean;
+};
+
+const HAR_VALUES = HAR_OPTIONS.map((o) => o.value) as readonly string[];
+
+export function parseStep2(input: Record<string, unknown>): Step2Fields {
+  const har = str(input.har);
+  const program = str(input.program).trim();
+  return {
+    har: (HAR_VALUES.includes(har) ? har : '') as HarValue,
+    program: (PROGRAM_OPTIONS as readonly string[]).includes(program) ? program : '',
+    msg: str(input.msg).trim().slice(0, MSG_MAX),
+    skipped: input.skipped === true,
+  };
+}
+
+/** Skjulte felt som følger med steg 1. */
 export type LeadMeta = {
   v: 'a' | 'b' | 'c';
   utm_source: string;
   utm_medium: string;
   utm_campaign: string;
   utm_content: string;
+  utm_term: string;
   fbclid: string;
+  pageUrl: string;
+  clientEventId: string;
   t0: number;
   consent: 'all' | 'necessary' | '';
 };
@@ -127,7 +127,10 @@ export function parseMeta(input: Record<string, unknown>): LeadMeta {
     utm_medium: str(input.utm_medium).slice(0, 200),
     utm_campaign: str(input.utm_campaign).slice(0, 200),
     utm_content: str(input.utm_content).slice(0, 200),
+    utm_term: str(input.utm_term).slice(0, 200),
     fbclid: str(input.fbclid).slice(0, 500),
+    pageUrl: str(input.pageUrl).slice(0, 500),
+    clientEventId: str(input.clientEventId).trim().slice(0, 100),
     t0: Number.isFinite(t0) ? t0 : NaN,
     consent: c === 'all' || c === 'necessary' ? c : '',
   };

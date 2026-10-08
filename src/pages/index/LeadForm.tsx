@@ -1,28 +1,34 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Button, Input, Notice, Select, Textarea } from '../../ds';
+import { Button, Input, Notice } from '../../ds';
 import { site, type Variant } from '../../content/site';
-import { BRANSJE_OPTIONS, MSG_MAX, PROGRAM_OPTIONS, REGNSKAPSFORER_OPTIONS, labels } from '../../shared/form-content';
-import { toE164, validateLead, type FieldError, type LeadFieldName } from '../../shared/validate';
+import { labels } from '../../shared/form-content';
+import { validateStep1, type FieldError, type Step1FieldName } from '../../shared/validate';
 import { getConsent } from '../../lib/consent';
+import { config } from '../../lib/config';
 import { setStoredLead, type Utm } from '../../lib/storage';
 import { firstName } from '../../lib/format';
 
-type Values = Record<LeadFieldName, string>;
-const initial: Values = { name: '', company: '', tel: '', email: '', regnskapsforer: '', program: '', bransje: '', msg: '' };
+type Values = { name: string; tel: string; company: string };
+const initial: Values = { name: '', tel: '', company: '' };
 
-type LeadResponse = { leadId: string; taskId: string | null; utfall: 'kvalifisert' | 'diskvalifisert'; kvalifisert: 'ja' | 'nei' | 'ikke verifisert' };
+type LeadResponse = { leadId: string };
+
+/** Forsinkelsen er bare for at «Nummeret er mottatt»-meldingen skal rekke å vises, ikke en simulert
+ * innsending - selve API-kallet er allerede fullført når denne starter. */
+const SENT_PAUSE_MS = 700;
 
 export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
   const [values, setValues] = useState<Values>(initial);
-  const [errors, setErrors] = useState<Partial<Record<LeadFieldName, string>>>({});
-  const [status, setStatus] = useState<'idle' | 'sending' | 'error'>('idle');
+  const [errors, setErrors] = useState<Partial<Record<Step1FieldName, string>>>({});
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [announce, setAnnounce] = useState('');
   const t0 = useRef<number>(Date.now());
+  const clientEventId = useRef<string>(crypto.randomUUID());
   const honeypot = useRef<HTMLInputElement>(null);
 
   const update =
-    (field: LeadFieldName) =>
-    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    (field: Step1FieldName) =>
+    (e: ChangeEvent<HTMLInputElement>) => {
       const v = e.target.value;
       setValues((prev) => ({ ...prev, [field]: v }));
       if (errors[field]) {
@@ -35,7 +41,7 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
     };
 
   function applyErrors(list: FieldError[]) {
-    const map: Partial<Record<LeadFieldName, string>> = {};
+    const map: Partial<Record<Step1FieldName, string>> = {};
     for (const e of list) if (!map[e.field]) map[e.field] = e.message;
     setErrors(map);
     setAnnounce(`${labels.errorSummary} ${list.map((e) => e.message).join(' ')}`);
@@ -44,7 +50,8 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
       requestAnimationFrame(() => {
         const el = document.getElementById(`f-${first}`);
         if (!el) return;
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const top = el.getBoundingClientRect().top + window.scrollY - 160;
+        window.scrollTo({ top, behavior: 'smooth' });
         el.focus({ preventScroll: true });
       });
     }
@@ -52,8 +59,8 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (status === 'sending') return;
-    const result = validateLead(values);
+    if (status === 'sending' || status === 'sent') return;
+    const result = validateStep1(values);
     if (!result.ok) {
       applyErrors(result.errors);
       return;
@@ -65,6 +72,8 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
       ...values,
       v: variant,
       ...utm,
+      pageUrl: window.location.href,
+      clientEventId: clientEventId.current,
       t0: t0.current,
       consent: getConsent() ?? '',
       website: honeypot.current?.value ?? '',
@@ -75,7 +84,7 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (res.status === 400) {
+      if (res.status === 422) {
         const body = (await res.json().catch(() => null)) as { errors?: FieldError[] } | null;
         if (body && Array.isArray(body.errors) && body.errors.length) applyErrors(body.errors);
         setStatus('idle');
@@ -88,15 +97,13 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
         leadId: body.leadId,
         name: result.data.name,
         firstName: firstName(result.data.name),
-        email: result.data.email,
-        tel: toE164(result.data.tel),
-        taskId: body.taskId ?? null,
-        utfall: body.utfall,
+        telRaw: result.data.telRaw,
         v: variant,
-        kvalifisert: body.kvalifisert,
+        clientEventId: clientEventId.current,
       });
-      setAnnounce('Meldingen er sendt.');
-      window.location.assign(body.utfall === 'diskvalifisert' ? '/takker-nei' : '/takk');
+      setStatus('sent');
+      setAnnounce(labels.sentTitle);
+      window.setTimeout(() => window.location.assign('/takk'), SENT_PAUSE_MS);
     } catch {
       // Nettverksfeil: behold alt som er fylt ut.
       setStatus('error');
@@ -104,26 +111,16 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
   }
 
   const sending = status === 'sending';
+  const sent = status === 'sent';
 
   return (
     <form className="form" onSubmit={onSubmit} noValidate aria-describedby="form-note">
-      <Input id="f-name" name="name" label={labels.name} type="text" autoComplete="name" aria-required="true" value={values.name} onChange={update('name')} error={errors.name} />
-      <Input id="f-company" name="company" label={labels.company} type="text" autoComplete="organization" aria-required="true" value={values.company} onChange={update('company')} error={errors.company} />
-      <Input id="f-tel" name="tel" label={labels.tel} hint={labels.telHint} type="tel" inputMode="tel" autoComplete="tel" aria-required="true" value={values.tel} onChange={update('tel')} error={errors.tel} />
-      <Input id="f-email" name="email" label={labels.email} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" aria-required="true" value={values.email} onChange={update('email')} error={errors.email} />
-      <Select id="f-regnskapsforer" name="regnskapsforer" label={labels.regnskapsforer} options={REGNSKAPSFORER_OPTIONS} placeholder={labels.select} aria-required="true" value={values.regnskapsforer} onChange={update('regnskapsforer')} error={errors.regnskapsforer} />
-      <Select id="f-program" name="program" label={labels.program} options={PROGRAM_OPTIONS} placeholder={labels.select} aria-required="true" value={values.program} onChange={update('program')} error={errors.program} />
-      <Select id="f-bransje" name="bransje" label={labels.bransje} options={BRANSJE_OPTIONS} placeholder={labels.select} aria-required="true" value={values.bransje} onChange={update('bransje')} error={errors.bransje} />
-      <Textarea id="f-msg" name="msg" label={labels.msg} optional optionalLabel={labels.optional} maxLength={MSG_MAX} rows={4} value={values.msg} onChange={update('msg')} error={errors.msg} />
+      <Input id="f-name" name="name" label={labels.name} type="text" autoComplete="name" aria-required="true" value={values.name} onChange={update('name')} error={errors.name} disabled={sent} />
+      <Input id="f-tel" name="tel" label={labels.tel} hint={labels.telHint} type="tel" inputMode="tel" autoComplete="tel" aria-required="true" value={values.tel} onChange={update('tel')} error={errors.tel} disabled={sent} />
+      <Input id="f-company" name="company" label={labels.company} type="text" autoComplete="organization" aria-required="true" value={values.company} onChange={update('company')} error={errors.company} disabled={sent} />
 
-      {/* Skjulte felt: variant, UTM, fbclid og t0 følger med i innsendingen. */}
+      {/* Skjult felt: hero-variant følger med innsendingen. */}
       <input type="hidden" name="v" value={variant} />
-      <input type="hidden" name="utm_source" value={utm.utm_source} />
-      <input type="hidden" name="utm_medium" value={utm.utm_medium} />
-      <input type="hidden" name="utm_campaign" value={utm.utm_campaign} />
-      <input type="hidden" name="utm_content" value={utm.utm_content} />
-      <input type="hidden" name="fbclid" value={utm.fbclid} />
-      <input type="hidden" name="t0" value={t0.current} />
       {/* Honningfelle: skjult for mennesker, skal være tom. */}
       <div className="hp" aria-hidden="true">
         <label htmlFor="f-website">Nettside</label>
@@ -133,15 +130,24 @@ export function LeadForm({ variant, utm }: { variant: Variant; utm: Utm }) {
       {status === 'error' && <Notice role="alert">{labels.networkError}</Notice>}
 
       <div className="form__actions">
-        <Button type="submit" icon="arrow-right" full disabled={sending} aria-disabled={sending}>
-          {sending ? labels.sending : labels.submit}
-        </Button>
-        <p id="form-note" className="form__note">
-          {labels.privacyNote}{' '}
-          <a className="ds-link" href={site.privacyHref}>
-            {labels.privacyLink}
-          </a>
-        </p>
+        {sent ? (
+          <Notice tone="success" title={labels.sentTitle}>
+            {labels.sentBody}
+          </Notice>
+        ) : (
+          <Button type="submit" icon="arrow-right" full size="lg" disabled={sending} aria-disabled={sending}>
+            {sending ? labels.sending : labels.submitStep1}
+          </Button>
+        )}
+        {!sent && (
+          <p id="form-note" className="form__note">
+            {labels.privacyNote}{' '}
+            <a className="ds-link" href={site.privacyHref}>
+              {labels.privacyLink}
+            </a>
+          </p>
+        )}
+        {!sent && config.weekendEveningBannerEnabled && <p className="form__note">{site.weekendEveningNote}</p>}
       </div>
       <p className="ds-sr-only" aria-live="polite" role="status">
         {announce}

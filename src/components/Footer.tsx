@@ -23,7 +23,7 @@ export function Footer({ cap = false, showBook = false }: Props) {
             </a>
             {showBook && (
               <a className="ds-link" href={site.formAnchor}>
-                {site.bookLabel}
+                {site.ringLabel}
               </a>
             )}
             <a className="ds-link" href={site.privacyHref}>

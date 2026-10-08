@@ -7,10 +7,7 @@ export function sha256(s: string): string {
   return createHash('sha256').update(s).digest('hex');
 }
 
-/** Metas normalisering: e-post små bokstaver uten mellomrom, telefon som sifre med landkode uten «+». */
-export function hashEmail(email: string): string {
-  return sha256(email.trim().toLowerCase());
-}
+/** Metas normalisering: telefon som sifre med landkode uten «+». */
 export function hashPhone(e164: string): string {
   return sha256(e164.replace(/\D/g, ''));
 }
@@ -21,8 +18,8 @@ export function fbcFromClid(fbclid: string, now: number): string | undefined {
 }
 
 export type CapiLead = {
+  /** `clientEventId` fra nettleseren - samme event_id som pixelen, ikke leadId (AO-4). */
   eventId: string;
-  email: string;
   phoneE164: string;
   fbclid: string;
   sourceUrl: string;
@@ -33,7 +30,6 @@ export type CapiLead = {
 
 export function buildLeadEvent(l: CapiLead, testEventCode?: string) {
   const user_data: Record<string, unknown> = {
-    em: [hashEmail(l.email)],
     ph: [hashPhone(l.phoneE164)],
   };
   const fbc = fbcFromClid(l.fbclid, l.now);

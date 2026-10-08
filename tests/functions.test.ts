@@ -1,53 +1,48 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildDescription, buildSheetPayload, buildTags, kvalifisertFor, priorityFor, taskName, type TaskFacts } from '../netlify/lib/describe';
-import { buildLeadEvent, fbcFromClid, hashEmail, hashPhone } from '../netlify/lib/meta';
+import { buildDescription, buildStep1SheetPayload, buildStep2SheetPayload, buildTags, taskName, type TaskFacts } from '../netlify/lib/describe';
+import { buildLeadEvent, fbcFromClid, hashPhone } from '../netlify/lib/meta';
 import { lookupCompany } from '../netlify/lib/brreg';
 import { pageKeyFrom, osloDate } from '../netlify/lib/counters';
 import { postToZapier } from '../netlify/lib/zapier';
-import type { LeadFields, LeadMeta } from '../src/shared/validate';
+import type { LeadMeta, Step1Fields } from '../src/shared/validate';
 
-const lead: LeadFields = {
+const lead: Step1Fields = {
   name: 'Kari Nordmann',
   company: 'Eksempel AS',
   tel: '40156666',
-  email: 'kari@example.com',
-  regnskapsforer: 'Nei, jeg fører selv',
-  program: 'Fiken',
-  bransje: 'Bygg, anlegg og håndverk',
-  msg: 'Fikk brev fra Skatteetaten.',
+  telRaw: '40 15 66 66',
 };
-const meta: LeadMeta = { v: 'b', utm_source: 'fb', utm_medium: 'paid', utm_campaign: 'sept', utm_content: 'ad1', fbclid: 'abc', t0: 1, consent: 'all' };
+const meta: LeadMeta = {
+  v: 'b',
+  utm_source: 'fb',
+  utm_medium: 'paid',
+  utm_campaign: 'sept',
+  utm_content: 'ad1',
+  utm_term: 'regnskap',
+  fbclid: 'abc',
+  pageUrl: 'https://leads.accountera.no/?v=b',
+  clientEventId: 'evt-1',
+  t0: 1,
+  consent: 'all',
+};
 const base: TaskFacts = {
   lead,
   meta,
-  outcome: 'kvalifisert',
   brreg: { status: 'verifisert', enhet: { organisasjonsnummer: '926445936', navn: 'EKSEMPEL AS', organisasjonsform: { kode: 'AS' }, naeringskode1: { kode: '69.201', beskrivelse: 'Regnskap' }, antallAnsatte: 7 } },
   leadId: 'lead-1',
   duplicate: false,
   submittedAt: Date.UTC(2026, 8, 3, 12, 30),
 };
 
-describe('tagger og prioritet', () => {
-  it('kvalifisert og verifisert', () => {
-    expect(buildTags(base)).toEqual(['vinkel-b', 'kvalifisert', 'foerer-selv']);
-    expect(priorityFor('kvalifisert')).toBe(1);
+describe('buildTags', () => {
+  it('vinkel og verifisert', () => {
+    expect(buildTags(base)).toEqual(['vinkel-b', 'brreg-verifisert']);
   });
-  it('kvalifisert men ikke verifisert', () => {
-    expect(buildTags({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } })).toEqual(['vinkel-b', 'ikke-verifisert', 'foerer-selv']);
+  it('ikke verifisert i Enhetsregisteret', () => {
+    expect(buildTags({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } })).toEqual(['vinkel-b', 'brreg-ikke-verifisert']);
   });
-  it('diskvalifisert har lav prioritet, uansett verifisering', () => {
-    expect(buildTags({ ...base, outcome: 'diskvalifisert' })).toEqual(['vinkel-b', 'diskvalifisert', 'foerer-selv']);
-    expect(priorityFor('diskvalifisert')).toBe(4);
-  });
-  it('duplikat legges til', () => {
-    expect(buildTags({ ...base, duplicate: true })).toEqual(['vinkel-b', 'kvalifisert', 'duplikat', 'foerer-selv']);
-  });
-  it('regnskapsfører-svar gir riktig tagg, og påvirker ikke kvalifisering', () => {
-    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: 'Ja, jeg bruker et regnskapsbyrå' } })).toEqual(['vinkel-b', 'kvalifisert', 'har-byraa']);
-    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: 'Nei, men jeg har hatt det tidligere' } })).toEqual(['vinkel-b', 'kvalifisert', 'tidligere-byraa']);
-  });
-  it('ukjent regnskapsfører-svar legger ikke til noen tagg', () => {
-    expect(buildTags({ ...base, lead: { ...lead, regnskapsforer: '' } })).toEqual(['vinkel-b', 'kvalifisert']);
+  it('duplikat legges til sist', () => {
+    expect(buildTags({ ...base, duplicate: true })).toEqual(['vinkel-b', 'brreg-verifisert', 'duplikat']);
   });
 });
 
@@ -55,16 +50,19 @@ describe('beskrivelse', () => {
   it('navn er Firmanavn · Navn', () => {
     expect(taskName(lead)).toBe('Eksempel AS · Kari Nordmann');
   });
-  it('inneholder tel-lenke, org.nr, variant, UTM, norsk tid og leadId', () => {
+  it('inneholder tel-lenke, oppgitt nummer, org.nr, variant, UTM, norsk tid og leadId', () => {
     const d = buildDescription(base);
     expect(d).toContain('[40 15 66 66](tel:+4740156666)');
+    expect(d).toContain('oppgitt: 40 15 66 66');
     expect(d).toContain('926445936');
     expect(d).toContain('**Variant:** b');
     expect(d).toContain('utm_campaign=sept');
+    expect(d).toContain('utm_term=regnskap');
     expect(d).toContain('14:30');
     expect(d).toContain('**leadId:** lead-1');
-    expect(d).toContain('Fikk brev fra Skatteetaten.');
-    expect(d).toContain('**Har regnskapsfører i dag:** Nei, jeg fører selv');
+  });
+  it('nevner duplikat når satt', () => {
+    expect(buildDescription({ ...base, duplicate: true })).toContain('duplikat');
   });
   it('lister kandidater når ikke verifisert', () => {
     const d = buildDescription({
@@ -78,19 +76,20 @@ describe('beskrivelse', () => {
 });
 
 describe('Meta CAPI', () => {
-  it('hasher e-post og telefon slik Meta krever', () => {
-    expect(hashEmail('  Kari@Example.com ')).toBe(hashEmail('kari@example.com'));
+  it('hasher telefon slik Meta krever, ingen e-post', () => {
     expect(hashPhone('+4740156666')).toBe(hashPhone('4740156666'));
-    expect(hashEmail('kari@example.com')).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashPhone('+4740156666')).toMatch(/^[0-9a-f]{64}$/);
   });
-  it('bygger Lead med event_id, fbc og kilde-URL', () => {
-    const b = buildLeadEvent({ eventId: 'lead-1', email: 'kari@example.com', phoneE164: '+4740156666', fbclid: 'abc', sourceUrl: 'https://leads.accountera.no/?v=b', now: 1_700_000_000_000 }, 'TEST1');
+  it('bygger Lead med event_id = clientEventId, fbc og kilde-URL, uten em', () => {
+    const b = buildLeadEvent({ eventId: 'evt-1', phoneE164: '+4740156666', fbclid: 'abc', sourceUrl: 'https://leads.accountera.no/?v=b', now: 1_700_000_000_000 }, 'TEST1');
     const ev = (b.data as Record<string, unknown>[])[0];
     expect(ev.event_name).toBe('Lead');
-    expect(ev.event_id).toBe('lead-1');
+    expect(ev.event_id).toBe('evt-1');
     expect(ev.event_time).toBe(1_700_000_000);
     expect(ev.event_source_url).toBe('https://leads.accountera.no/?v=b');
-    expect((ev.user_data as Record<string, unknown>).fbc).toBe('fb.1.1700000000000.abc');
+    const userData = ev.user_data as Record<string, unknown>;
+    expect(userData.fbc).toBe('fb.1.1700000000000.abc');
+    expect(userData.em).toBeUndefined();
     expect(b.test_event_code).toBe('TEST1');
     expect(fbcFromClid('', 1)).toBeUndefined();
   });
@@ -131,72 +130,69 @@ describe('tellere', () => {
   });
 });
 
-describe('buildSheetPayload (nyttelast mot Zapier → Google Sheet)', () => {
+describe('buildStep1SheetPayload (nyttelast mot Zapier → Google Sheet, steg 1)', () => {
   it('inneholder eksakt de avtalte nøklene, med riktige verdier ved verifisert treff', () => {
-    const p = buildSheetPayload(base, 'https://app.clickup.com/t/task1');
+    const p = buildStep1SheetPayload(base);
     expect(Object.keys(p).sort()).toEqual(
       [
-        'bransje',
-        'brreg_treff',
-        'clickup_url',
-        'epost',
-        'firma',
-        'har_regnskapsforer',
-        'kvalifisert',
-        'melding',
-        'navn',
-        'orgnr',
-        'regnskapsprogram',
-        'telefon',
+        'leadId',
         'timestamp',
+        'navn',
+        'firma',
+        'telefon',
+        'telefon_oppgitt',
+        'vinkel',
+        'utm_source',
+        'utm_medium',
         'utm_campaign',
         'utm_content',
-        'utm_source',
-        'vinkel',
+        'utm_term',
+        'orgnr',
+        'brreg_treff',
+        'side_url',
       ].sort(),
     );
+    expect(p.leadId).toBe('lead-1');
     expect(p.navn).toBe('Kari Nordmann');
     expect(p.firma).toBe('Eksempel AS');
     expect(p.telefon).toBe('+4740156666');
-    expect(p.epost).toBe('kari@example.com');
-    expect(p.har_regnskapsforer).toBe('Nei, jeg fører selv');
-    expect(p.regnskapsprogram).toBe('Fiken');
-    expect(p.bransje).toBe('Bygg, anlegg og håndverk');
-    expect(p.melding).toBe('Fikk brev fra Skatteetaten.');
+    expect(p.telefon_oppgitt).toBe('40 15 66 66');
     expect(p.vinkel).toBe('b');
     expect(p.utm_source).toBe('fb');
     expect(p.utm_campaign).toBe('sept');
     expect(p.utm_content).toBe('ad1');
+    expect(p.utm_term).toBe('regnskap');
     expect(p.orgnr).toBe('926445936');
     expect(p.brreg_treff).toBe('ja');
-    expect(p.kvalifisert).toBe('ja');
-    expect(p.clickup_url).toBe('https://app.clickup.com/t/task1');
+    expect(p.side_url).toBe('https://leads.accountera.no/?v=b');
     expect(new Date(p.timestamp).toISOString()).toBe(p.timestamp);
   });
-  it('ikke verifisert i Enhetsregisteret, men ikke diskvalifisert: kvalifisert = ikke verifisert', () => {
-    const p = buildSheetPayload({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } }, '');
+  it('ikke verifisert i Enhetsregisteret', () => {
+    const p = buildStep1SheetPayload({ ...base, brreg: { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' } });
     expect(p.brreg_treff).toBe('nei');
-    expect(p.kvalifisert).toBe('ikke verifisert');
     expect(p.orgnr).toBe('');
-    expect(p.clickup_url).toBe('');
   });
-  it('diskvalifisert bransje: kvalifisert = nei, uansett Enhetsregisteret', () => {
-    const p = buildSheetPayload({ ...base, outcome: 'diskvalifisert' }, '');
-    expect(p.kvalifisert).toBe('nei');
-    expect(p.brreg_treff).toBe('ja');
+  it('ingen epost eller bransje i nyttelasten', () => {
+    const p = buildStep1SheetPayload(base);
+    expect((p as Record<string, unknown>).epost).toBeUndefined();
+    expect((p as Record<string, unknown>).bransje).toBeUndefined();
   });
 });
 
-describe('kvalifisertFor (samme avledning som Sheet-kolonnen, gjenbrukt i /api/lead-svaret)', () => {
-  it('diskvalifisert bransje: nei, uansett Enhetsregisteret', () => {
-    expect(kvalifisertFor('diskvalifisert', base.brreg)).toBe('nei');
-    expect(kvalifisertFor('diskvalifisert', { status: 'ikke-verifisert', kandidater: [], grunn: 'ingen' })).toBe('nei');
+describe('buildStep2SheetPayload (steg 2, finner/oppdaterer raden på leadId)', () => {
+  it('inneholder eksakt de avtalte nøklene', () => {
+    const p = buildStep2SheetPayload({ leadId: 'lead-1', har: 'selv', program: 'Fiken', msg: 'Hei', step2Status: 'sendt', step2At: Date.UTC(2026, 8, 3, 12, 35) });
+    expect(Object.keys(p).sort()).toEqual(['leadId', 'har', 'regnskapsprogram', 'melding', 'step2_status', 'step2_tidspunkt'].sort());
+    expect(p.leadId).toBe('lead-1');
+    expect(p.har).toBe('selv');
+    expect(p.regnskapsprogram).toBe('Fiken');
+    expect(p.melding).toBe('Hei');
+    expect(p.step2_status).toBe('sendt');
+    expect(new Date(p.step2_tidspunkt).toISOString()).toBe(p.step2_tidspunkt);
   });
-  it('kvalifisert og verifisert: ja', () => {
-    expect(kvalifisertFor('kvalifisert', base.brreg)).toBe('ja');
-  });
-  it('kvalifisert men ikke verifisert: ikke verifisert', () => {
-    expect(kvalifisertFor('kvalifisert', { status: 'ikke-verifisert', kandidater: [], grunn: 'flere' })).toBe('ikke verifisert');
+  it('hoppet over gir step2_status = hoppet_over', () => {
+    const p = buildStep2SheetPayload({ leadId: 'lead-1', har: '', program: '', msg: '', step2Status: 'hoppet_over', step2At: 1 });
+    expect(p.step2_status).toBe('hoppet_over');
   });
 });
 
