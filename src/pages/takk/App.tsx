@@ -151,7 +151,10 @@ export function App() {
     setStep2Done(true);
   }
 
-  const title = lead ? takk.title(lead.firstName, lead.telRaw) : takk.title('', '');
+  // Uten en lagret lead (f.eks. direkte lenke uten å ha sendt inn skjemaet) har vi verken navn
+  // eller nummer å sette inn i den avtalte malen - viser da en enkel, grammatisk hel setning i
+  // stedet for å sette inn tomme verdier.
+  const title = lead ? takk.title(lead.firstName, lead.telRaw) : 'Takk. Vi ringer deg i løpet av dagen.';
 
   return (
     <>

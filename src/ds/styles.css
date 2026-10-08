@@ -237,6 +237,7 @@ textarea.ds-control { min-height: 7.5rem; resize: vertical; }
   width: 1px;
   height: 1px;
   opacity: 0;
+  color: inherit;
 }
 .ds-radio__dot {
   flex: none;
@@ -349,6 +350,10 @@ textarea.ds-control { min-height: 7.5rem; resize: vertical; }
     inset: 0;
     width: 100%;
     height: 100%;
+    /* Nullstiller mobilens clip-path (ment for en lav bannerhøyde): uten dette kuttes panelet
+       diagonalt over hele den langt høyere desktop-heroen, og krem tekst over det kuttede
+       området blir usynlig mot den kremfargede sidebakgrunnen bak. */
+    clip-path: none;
   }
   .ds-diag--hero .ds-diag__panel::after {
     content: '';
